@@ -1,0 +1,3 @@
+config SPRING_QBT_HANDLER
+	tristate "Spring Qualcomm fingerprint button handler"
+	depends on INPUT && OF
