@@ -8,6 +8,7 @@
 #include <linux/delay.h>
 #include <linux/device.h>
 #include <linux/module.h>
+#include <linux/notifier.h>
 #include <linux/platform_device.h>
 #include <linux/regmap.h>
 #include <linux/power_supply.h>
@@ -25,6 +26,25 @@
 #include "smb5-lib.h"
 #include "smb5-iio.h"
 #include "schgm-flash.h"
+
+SRCU_NOTIFIER_HEAD_STATIC(qpnp_smb5_notifier);
+int qpnp_smb5_reg_notifier(struct notifier_block *nb)
+{
+	return srcu_notifier_chain_register(&qpnp_smb5_notifier, nb);
+}
+EXPORT_SYMBOL_GPL(qpnp_smb5_reg_notifier);
+
+int qpnp_smb5_unreg_notifier(struct notifier_block *nb)
+{
+	return srcu_notifier_chain_unregister(&qpnp_smb5_notifier, nb);
+}
+EXPORT_SYMBOL_GPL(qpnp_smb5_unreg_notifier);
+
+int qpnp_smb5_notifier_call_chain(unsigned long event, int val)
+{
+	return srcu_notifier_call_chain(&qpnp_smb5_notifier, event, &val);
+}
+EXPORT_SYMBOL_GPL(qpnp_smb5_notifier_call_chain);
 
 static struct smb_params smb5_pmi632_params = {
 	.fcc			= {
@@ -1381,6 +1401,45 @@ static const struct power_supply_desc batt_psy_desc = {
 	.property_is_writeable = smb5_batt_prop_is_writeable,
 };
 
+static ssize_t input_suspend_show(struct device *dev,
+				  struct device_attribute *attr, char *buf)
+{
+	struct smb_charger *chg = power_supply_get_drvdata(to_power_supply(dev));
+	union power_supply_propval val;
+	int ret;
+
+	ret = smblib_get_prop_input_suspend(chg, &val);
+	if (ret)
+		return ret;
+
+	return sysfs_emit(buf, "%d\n", val.intval);
+}
+
+static ssize_t input_suspend_store(struct device *dev,
+				   struct device_attribute *attr,
+				   const char *buf, size_t count)
+{
+	struct smb_charger *chg = power_supply_get_drvdata(to_power_supply(dev));
+	union power_supply_propval val;
+	bool suspend;
+	int ret;
+
+	ret = kstrtobool(buf, &suspend);
+	if (ret)
+		return ret;
+
+	val.intval = suspend;
+	ret = smblib_set_prop_input_suspend(chg, &val);
+	return ret ? ret : count;
+}
+static DEVICE_ATTR_RW(input_suspend);
+
+static struct attribute *smb5_batt_attrs[] = {
+	&dev_attr_input_suspend.attr,
+	NULL,
+};
+ATTRIBUTE_GROUPS(smb5_batt);
+
 static int smb5_init_batt_psy(struct smb5 *chip)
 {
 	struct power_supply_config batt_cfg = {};
@@ -1388,6 +1447,7 @@ static int smb5_init_batt_psy(struct smb5 *chip)
 	int rc = 0;
 
 	batt_cfg.drv_data = chg;
+	batt_cfg.attr_grp = smb5_batt_groups;
 	batt_cfg.of_node = chg->dev->of_node;
 	chg->batt_psy = devm_power_supply_register(chg->dev,
 					   &batt_psy_desc,

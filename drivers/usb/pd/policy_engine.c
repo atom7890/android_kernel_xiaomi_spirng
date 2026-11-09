@@ -186,6 +186,7 @@ enum iio_psy_property {
 	POWER_SUPPLY_PROP_REAL_TYPE,
 	POWER_SUPPLY_PROP_TYPEC_MODE,
 	POWER_SUPPLY_PROP_PE_START,
+	USBPD_IIO_DECREASE_VOLT,
 	POWER_SUPPLY_IIO_PROP_MAX,
 };
 
@@ -194,6 +195,7 @@ static const char * const usbpd_iio_channel_map[] = {
 	"typec_power_role", "pd_usb_suspend_supported", "typec_src_rp",
 	"pd_in_hard_reset", "pr_current_max", "pr_swap", "pd_voltage_min",
 	"pd_voltage_max", "real_type", "typec_mode", "pe_start",
+	"decrease_volt",
 };
 
 static inline const char *msg_to_string(u8 id, bool is_data, bool is_ext)
@@ -4255,6 +4257,51 @@ static ssize_t pdo_n_show(struct device *dev, struct device_attribute *attr,
 	return -EINVAL;
 }
 
+int usbpd_fetch_pdo(struct usbpd *pd, struct usbpd_pdo *pdos)
+{
+	unsigned int i;
+	u32 pdo;
+
+	if (!pd || !pdos)
+		return -EINVAL;
+
+	mutex_lock(&pd->swap_lock);
+	if (pd->current_pr == PR_SRC) {
+		mutex_unlock(&pd->swap_lock);
+		return -EOPNOTSUPP;
+	}
+
+	memset(pdos, 0, sizeof(*pdos) * ARRAY_SIZE(pd->received_pdos));
+	for (i = 0; i < ARRAY_SIZE(pd->received_pdos); i++) {
+		pdo = pd->received_pdos[i];
+		if (!pdo)
+			break;
+
+		pdos[i].pos = i + 1;
+		pdos[i].type = PD_SRC_PDO_TYPE(pdo);
+		if (pdos[i].type == PD_SRC_PDO_TYPE_FIXED) {
+			pdos[i].max_volt_mv = PD_SRC_PDO_FIXED_VOLTAGE(pdo) * 50;
+			pdos[i].min_volt_mv = pdos[i].max_volt_mv;
+			pdos[i].curr_ma = PD_SRC_PDO_FIXED_MAX_CURR(pdo) * 10;
+		} else if (pdos[i].type == PD_SRC_PDO_TYPE_AUGMENTED &&
+			   !PD_APDO_PPS(pdo)) {
+			pdos[i].pps = true;
+			pdos[i].max_volt_mv = PD_APDO_MAX_VOLT(pdo) * 100;
+			pdos[i].min_volt_mv = PD_APDO_MIN_VOLT(pdo) * 100;
+			pdos[i].curr_ma = PD_APDO_MAX_CURR(pdo) * 50;
+		}
+	}
+	mutex_unlock(&pd->swap_lock);
+	return 0;
+}
+EXPORT_SYMBOL_GPL(usbpd_fetch_pdo);
+
+int usbpd_get_src_cap_id(struct usbpd *pd)
+{
+	return READ_ONCE(pd->src_cap_id);
+}
+EXPORT_SYMBOL_GPL(usbpd_get_src_cap_id);
+
 static ssize_t select_pdo_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t size)
 {
@@ -4320,6 +4367,69 @@ out:
 	mutex_unlock(&pd->swap_lock);
 	return ret ? ret : size;
 }
+
+static bool usbpd_connector_protected(void)
+{
+	struct power_supply *fg;
+	union power_supply_propval val;
+	int ret;
+
+	fg = power_supply_get_by_name("bq28z610");
+	if (!fg)
+		return false;
+
+	ret = power_supply_get_property(fg, POWER_SUPPLY_PROP_SCOPE, &val);
+	power_supply_put(fg);
+	return !ret && val.intval;
+}
+
+int usbpd_select_pdo(struct usbpd *pd, int pdo, int uv, int ua)
+{
+	union power_supply_propval decrease_volt = {};
+	int ret;
+
+	if (!pd || pdo < 1 || pdo > ARRAY_SIZE(pd->received_pdos))
+		return -EINVAL;
+
+	mutex_lock(&pd->swap_lock);
+	if (pd->current_pr != PR_SINK || pd->current_state != PE_SNK_READY ||
+	    !is_sink_tx_ok(pd)) {
+		ret = -EBUSY;
+		goto unlock;
+	}
+
+	if (pd->iio_channels[USBPD_IIO_DECREASE_VOLT] && pdo != 1) {
+		ret = usbpd_get_psy_iio_property(pd, USBPD_IIO_DECREASE_VOLT,
+						 &decrease_volt);
+		if (ret)
+			goto unlock;
+	}
+
+	if (decrease_volt.intval || usbpd_connector_protected()) {
+		pdo = 1;
+		uv = 0;
+		ua = 0;
+	}
+
+	ret = pd_select_pdo(pd, pdo, uv, ua);
+	if (ret)
+		goto unlock;
+
+	reinit_completion(&pd->is_ready);
+	pd->send_request = true;
+	kick_sm(pd, 0);
+	if (!wait_for_completion_timeout(&pd->is_ready, msecs_to_jiffies(1000)))
+		ret = -ETIMEDOUT;
+	else if (pd->selected_pdo != pd->requested_pdo ||
+		 pd->current_voltage != pd->requested_voltage)
+		ret = -ECONNREFUSED;
+	pd->send_request = false;
+
+unlock:
+	mutex_unlock(&pd->swap_lock);
+	return ret;
+}
+EXPORT_SYMBOL_GPL(usbpd_select_pdo);
 
 static ssize_t select_pdo_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
@@ -4758,6 +4868,11 @@ struct usbpd *usbpd_create(struct device *parent,
 	}
 
 	for (i = 0; i < POWER_SUPPLY_IIO_PROP_MAX; i++) {
+		if (i == USBPD_IIO_DECREASE_VOLT &&
+		    of_property_match_string(parent->of_node, "io-channel-names",
+					     usbpd_iio_channel_map[i]) < 0)
+			continue;
+
 		pd->iio_channels[i] = devm_iio_channel_get(parent,
 						usbpd_iio_channel_map[i]);
 		if (IS_ERR(pd->iio_channels[i])) {

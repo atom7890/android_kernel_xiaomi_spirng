@@ -44,5 +44,9 @@ static inline int fsa4480_unreg_notifier(struct notifier_block *nb,
 }
 #endif /* CONFIG_QCOM_FSA4480_I2C */
 
+#if IS_REACHABLE(CONFIG_QCOM_FSA4480_I2C) && IS_ENABLED(CONFIG_RUST_DETECTION)
+int fsa4480_detect_liquid(struct device_node *node);
+#endif
+
 #endif /* FSA4480_I2C_H */
 

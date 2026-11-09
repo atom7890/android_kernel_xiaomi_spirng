@@ -1131,6 +1131,13 @@ config QCOM_FSA4480_I2C
 	  for accessing the device, switching between USB and Audio
 	  modes, changing orientation.
 
+config RUST_DETECTION
+	bool "Xiaomi USB-C switch liquid detection"
+	depends on ARCH_BLAIR && QCOM_FSA4480_I2C
+	help
+	  Compile the liquid detection routines for supported USB-C switch
+	  variants on Xiaomi Blair devices.
+
 config CDSPRM_VTCM_DYNAMIC_DEBUG
 	bool "Enable for VTCM parition test enablement"
 	help

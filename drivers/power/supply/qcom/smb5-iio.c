@@ -106,6 +106,16 @@ int smb5_iio_get_prop(struct smb_charger *chg, int channel, int *val)
 	case PSY_IIO_SMB_EN_REASON:
 		*val = chg->cp_reason;
 		break;
+	case PSY_IIO_DECREASE_VOLT:
+		*val = READ_ONCE(chg->spring_lpd_detected) &&
+		       READ_ONCE(chg->spring_lpd_charging);
+		break;
+	case PSY_IIO_LPD_CONTROL:
+		*val = READ_ONCE(chg->spring_lpd_control);
+		break;
+	case PSY_IIO_LPD_CHARGING:
+		*val = READ_ONCE(chg->spring_lpd_charging);
+		break;
 	case PSY_IIO_MOISTURE_DETECTED:
 		*val = chg->moisture_present;
 		break;
@@ -383,6 +393,10 @@ int smb5_iio_set_prop(struct smb_charger *chg, int channel, int val)
 		del_timer_sync(&chg->apsd_timer);
 		chg->apsd_ext_timeout = false;
 		smblib_rerun_apsd(chg);
+		break;
+	case PSY_IIO_LPD_CONTROL:
+	case PSY_IIO_LPD_CHARGING:
+		rc = smblib_spring_lpd_set(chg, channel, val);
 		break;
 	case PSY_IIO_MOISTURE_DETECTION_EN:
 		smblib_moisture_detection_enable(chg, val);

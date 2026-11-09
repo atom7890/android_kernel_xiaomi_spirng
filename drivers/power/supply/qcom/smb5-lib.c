@@ -16,6 +16,7 @@
 #include <linux/ktime.h>
 #include <linux/usb/typec.h>
 #include <linux/alarmtimer.h>
+#include <linux/soc/qcom/fsa4480-i2c.h>
 #include "smb5-lib.h"
 #include "smb5-reg.h"
 #include "schgm-flash.h"
@@ -5636,6 +5637,10 @@ static void smblib_usb_plugin_hard_reset_locked(struct smb_charger *chg)
 							true, 1500000);
 	}
 
+	if (IS_ENABLED(CONFIG_SPRING_XIAOMI_CHARGING))
+		qpnp_smb5_notifier_call_chain(QPNP_SMB5_USB_PLUGIN_EVENT,
+					     vbus_rising ? 1 : 2);
+
 	power_supply_changed(chg->usb_psy);
 	smblib_dbg(chg, PR_INTERRUPT, "IRQ: usbin-plugin %s\n",
 					vbus_rising ? "attached" : "detached");
@@ -5745,6 +5750,10 @@ static void smblib_usb_plugin_locked(struct smb_charger *chg)
 
 	vote(chg->temp_change_irq_disable_votable, DEFAULT_VOTER,
 						!vbus_rising, 0);
+
+	if (IS_ENABLED(CONFIG_SPRING_XIAOMI_CHARGING))
+		qpnp_smb5_notifier_call_chain(QPNP_SMB5_USB_PLUGIN_EVENT,
+					     vbus_rising ? 1 : 2);
 
 	power_supply_changed(chg->usb_psy);
 	smblib_dbg(chg, PR_INTERRUPT, "IRQ: usbin-plugin %s\n",
@@ -6623,6 +6632,74 @@ static void smblib_lpd_clear_ra_open_work(struct smb_charger *chg)
 }
 
 #define TYPEC_DETACH_DETECT_DELAY_MS 2000
+#define SPRING_LPD_VOTER "SPRING_LPD_VOTER"
+#define SPRING_LPD_LIMIT_UA 1500000
+
+static int smblib_spring_lpd_vote(struct smb_charger *chg)
+{
+	return vote(chg->usb_icl_votable, SPRING_LPD_VOTER,
+		    chg->spring_lpd_detected && chg->spring_lpd_charging,
+		    SPRING_LPD_LIMIT_UA);
+}
+
+int smblib_spring_lpd_set(struct smb_charger *chg, int channel, int val)
+{
+	int ret;
+
+	if (val != 0 && val != 1)
+		return -EINVAL;
+
+	mutex_lock(&chg->spring_lpd_lock);
+	if (channel == PSY_IIO_LPD_CONTROL)
+		WRITE_ONCE(chg->spring_lpd_control, val);
+	else
+		WRITE_ONCE(chg->spring_lpd_charging, val);
+	ret = smblib_spring_lpd_vote(chg);
+	mutex_unlock(&chg->spring_lpd_lock);
+
+	return ret;
+}
+
+static void smblib_spring_lpd_work(struct work_struct *work)
+{
+	struct smb_charger *chg = container_of(to_delayed_work(work),
+					      struct smb_charger, spring_lpd_work);
+#if IS_REACHABLE(CONFIG_QCOM_FSA4480_I2C) && IS_ENABLED(CONFIG_RUST_DETECTION)
+	struct device_node *node;
+	int ret;
+
+	node = of_parse_phandle(chg->dev->of_node, "xiaomi,lpd-switch", 0);
+	if (!node)
+		return;
+
+	ret = fsa4480_detect_liquid(node);
+	of_node_put(node);
+	if (ret < 0) {
+		smblib_err(chg, "liquid detection failed: %d\n", ret);
+		return;
+	}
+
+	mutex_lock(&chg->spring_lpd_lock);
+	if (ret)
+		WRITE_ONCE(chg->spring_lpd_detected, true);
+	ret = smblib_spring_lpd_vote(chg);
+	mutex_unlock(&chg->spring_lpd_lock);
+	if (ret < 0)
+		smblib_err(chg, "liquid protection vote failed: %d\n", ret);
+#endif
+}
+
+static void smblib_spring_lpd_detach(struct smb_charger *chg)
+{
+	cancel_delayed_work_sync(&chg->spring_lpd_work);
+	mutex_lock(&chg->spring_lpd_lock);
+	if (chg->spring_lpd_detected) {
+		WRITE_ONCE(chg->spring_lpd_detected, false);
+		smblib_spring_lpd_vote(chg);
+	}
+	mutex_unlock(&chg->spring_lpd_lock);
+}
+
 irqreturn_t smb5_typec_attach_detach_irq_handler(int irq, void *data)
 {
 	struct smb_irq_data *irq_data = data;
@@ -6674,6 +6751,11 @@ irqreturn_t smb5_typec_attach_detach_irq_handler(int irq, void *data)
 		if (rc < 0)
 			smblib_err(chg, "failed to register partner rc =%d\n",
 					rc);
+		if (READ_ONCE(chg->spring_lpd_control) &&
+		    chg->sink_src_mode != AUDIO_ACCESS_MODE)
+			schedule_delayed_work(&chg->spring_lpd_work, 0);
+		if (IS_ENABLED(CONFIG_SPRING_XIAOMI_CHARGING))
+			qpnp_smb5_notifier_call_chain(QPNP_SMB5_TYPEC_PLUGIN_EVENT, 1);
 	} else {
 		switch (chg->sink_src_mode) {
 		case SRC_MODE:
@@ -7350,6 +7432,9 @@ static void smblib_pr_swap_detach_work(struct work_struct *work)
 
 		if (chg->typec_port)
 			typec_partner_unregister(chg);
+		smblib_spring_lpd_detach(chg);
+		if (IS_ENABLED(CONFIG_SPRING_XIAOMI_CHARGING))
+			qpnp_smb5_notifier_call_chain(QPNP_SMB5_TYPEC_PLUGIN_EVENT, 2);
 	}
 out:
 	vote(chg->awake_votable, DETACH_DETECT_VOTER, false, 0);
@@ -8320,6 +8405,10 @@ int smblib_init(struct smb_charger *chg)
 	INIT_DELAYED_WORK(&chg->bb_removal_work, smblib_bb_removal_work);
 	INIT_DELAYED_WORK(&chg->lpd_ra_open_work, smblib_lpd_ra_open_work);
 	INIT_DELAYED_WORK(&chg->lpd_detach_work, smblib_lpd_detach_work);
+	INIT_DELAYED_WORK(&chg->spring_lpd_work, smblib_spring_lpd_work);
+	mutex_init(&chg->spring_lpd_lock);
+	chg->spring_lpd_control =
+		of_property_read_bool(chg->dev->of_node, "qcom,lpd_enable");
 	INIT_DELAYED_WORK(&chg->thermal_regulation_work,
 					smblib_thermal_regulation_work);
 	INIT_DELAYED_WORK(&chg->usbov_dbc_work, smblib_usbov_dbc_work);
@@ -8493,6 +8582,7 @@ int smblib_deinit(struct smb_charger *chg)
 		cancel_delayed_work_sync(&chg->bb_removal_work);
 		cancel_delayed_work_sync(&chg->lpd_ra_open_work);
 		cancel_delayed_work_sync(&chg->lpd_detach_work);
+		cancel_delayed_work_sync(&chg->spring_lpd_work);
 		cancel_delayed_work_sync(&chg->thermal_regulation_work);
 		cancel_delayed_work_sync(&chg->usbov_dbc_work);
 		cancel_delayed_work_sync(&chg->role_reversal_check);

@@ -10,6 +10,18 @@
 
 struct usbpd;
 
+struct usbpd_pdo {
+	bool pps;
+	int type;
+	int max_volt_mv;
+	int min_volt_mv;
+	int curr_ma;
+	int pos;
+};
+
+extern int usbpd_fetch_pdo(struct usbpd *pd, struct usbpd_pdo *pdos);
+extern int usbpd_get_src_cap_id(struct usbpd *pd);
+
 /* Standard IDs */
 #define USBPD_SID			0xff00
 

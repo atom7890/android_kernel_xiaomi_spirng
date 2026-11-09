@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: GPL-2.0-only
+obj-$(CONFIG_SPRING_XIAOMI_CHARGE_PUMPS) += bq25960_charger.o bq25960h_charger.o sc853x_charger.o
+obj-$(CONFIG_SPRING_XIAOMI_CHARGE_PUMPS) += cp_qc30.o fg_bq28z610.o
+obj-$(CONFIG_SPRING_XIAOMI_CHARGING) += pd_policy_manager.o lc_charger_sysfs-main.o xm_smart_chg.o gauge-iio.o
+fg_bq28z610-y := bq28z610.o lc_notify.o lc_adaptive_poweroff_voltage.o
+lc_charger_sysfs-main-y := lc_charger_sysfs.o lc_charger_sysfs_iio.o
+ccflags-y += -I$(srctree)/techpack/power/charger-partition
+ccflags-y += -I$(srctree)/drivers/power/supply/qcom

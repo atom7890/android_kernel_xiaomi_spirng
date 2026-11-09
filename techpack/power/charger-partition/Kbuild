@@ -1,0 +1,2 @@
+obj-$(CONFIG_SPRING_CHARGER_PARTITION) += charger_partition.o
+ccflags-y += -I$(srctree)/drivers/scsi

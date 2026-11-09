@@ -84,10 +84,6 @@ struct fsa4480_priv {
 	u32 dev_id; /* ADD: AudioSwitch_Bringup */
 };
 
-#if defined(CONFIG_RUST_DETECTION)
-static struct fsa4480_priv *global_fsa4480_data = NULL;
-#endif
-
 struct fsa4480_reg_val {
 	u16 reg;
 	u8 val;
@@ -629,9 +625,8 @@ static void fsa4480_update_reg_defaults(struct regmap *regmap)
 }
 
 #if defined(CONFIG_RUST_DETECTION)
-int rust_detection_workfunc_open(void)
+static int fsa4480_liquid_measure(struct fsa4480_priv *fsa_priv)
 {
-	struct fsa4480_priv *fsa_priv = global_fsa4480_data;
 	int reg_val_enable = 0, reg_val_pin = 0, reg_val_interval = 0, reg_val_select_mode = 0;
 	int reg_val_ccin = 0, reg_val_sbu1 = 0, reg_val_sbu2 = 0;
 	int val_result = 0, reg_val_det_int = 0, count_retry = 10, ret = 0;
@@ -714,10 +709,10 @@ int rust_detection_workfunc_open(void)
 	dev_dbg(dev, "%s: Moisture doesn’t occur\n", __func__);
 
 	return val_result;
-} EXPORT_SYMBOL_GPL(rust_detection_workfunc_open);
-int rust_detection_workfunc_close(void)
+}
+
+static int fsa4480_liquid_stop(struct fsa4480_priv *fsa_priv)
 {
-	struct fsa4480_priv *fsa_priv = global_fsa4480_data;
 	int reg_val_enable = 0, ret = 0;
 	struct device *dev = NULL;
 
@@ -749,7 +744,38 @@ int rust_detection_workfunc_close(void)
 	dev_dbg(dev, "%s: Moisture detection off\n", __func__);
 
 	return 0;
-} EXPORT_SYMBOL_GPL(rust_detection_workfunc_close);
+}
+
+int fsa4480_detect_liquid(struct device_node *node)
+{
+	struct i2c_client *client;
+	struct fsa4480_priv *fsa_priv;
+	int ret, stop_ret;
+
+	if (!node)
+		return -EINVAL;
+	client = of_find_i2c_device_by_node(node);
+	if (!client)
+		return -ENODEV;
+
+	device_lock(&client->dev);
+	fsa_priv = i2c_get_clientdata(client);
+	if (!fsa_priv) {
+		ret = -ENODEV;
+	} else {
+		mutex_lock(&fsa_priv->notification_lock);
+		ret = fsa4480_liquid_measure(fsa_priv);
+		stop_ret = fsa4480_liquid_stop(fsa_priv);
+		mutex_unlock(&fsa_priv->notification_lock);
+		if (ret >= 0 && stop_ret < 0)
+			ret = stop_ret;
+	}
+	device_unlock(&client->dev);
+	put_device(&client->dev);
+
+	return ret;
+}
+EXPORT_SYMBOL_GPL(fsa4480_detect_liquid);
 #endif
 
 static int fsa4480_probe(struct i2c_client *i2c,
@@ -850,9 +876,6 @@ static int fsa4480_probe(struct i2c_client *i2c,
 	dev_info(fsa_priv->dev, "%s: %s 0x%x\n", __func__, g_audio_switch_name, fsa_priv->dev_id);
 #endif
 	/* END AudioSwitch_Bringup */
-#if defined(CONFIG_RUST_DETECTION)
-	global_fsa4480_data = fsa_priv;
-#endif
 
 	mutex_init(&fsa_priv->notification_lock);
 	i2c_set_clientdata(i2c, fsa_priv);

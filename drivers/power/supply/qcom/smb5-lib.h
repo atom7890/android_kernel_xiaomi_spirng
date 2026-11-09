@@ -476,6 +476,11 @@ struct smb_charger {
 	struct delayed_work	bb_removal_work;
 	struct delayed_work	lpd_ra_open_work;
 	struct delayed_work	lpd_detach_work;
+	struct delayed_work	spring_lpd_work;
+	struct mutex		spring_lpd_lock;
+	bool			spring_lpd_control;
+	bool			spring_lpd_charging;
+	bool			spring_lpd_detected;
 	struct delayed_work	thermal_regulation_work;
 	struct delayed_work	usbov_dbc_work;
 	struct delayed_work	pr_swap_detach_work;
@@ -835,6 +840,7 @@ int smblib_get_irq_status(struct smb_charger *chg,
 				int *val);
 int smblib_get_qc3_main_icl_offset(struct smb_charger *chg, int *offset_ua);
 
+int smblib_spring_lpd_set(struct smb_charger *chg, int channel, int val);
 int smblib_init(struct smb_charger *chg);
 int smblib_deinit(struct smb_charger *chg);
 int smb5_iio_get_prop(struct smb_charger *chg, int channel, int *val);
@@ -848,4 +854,22 @@ int smblib_get_prop_dc_voltage_now(struct smb_charger *chg,
 				union power_supply_propval *val);
 
 void smblib_moisture_detection_enable(struct smb_charger *chg, int pval);
+#define HVDCP_MIN_VOL_UV 8000000
+
+struct notifier_block;
+
+enum qpnp_smb5_notifier_events {
+	QPNP_SMB5_NONE_EVENT = 0,
+	QPNP_SMB5_USB_PLUGIN_EVENT = 1,
+	QPNP_SMB5_THERMAL_LEVEL_EVENT = 2,
+	QPNP_SMB5_SMART_CHG_EVENT = 3,
+	QPNP_SMB5_SMART_BATT_EVENT = 4,
+	QPNP_SMB5_NIGHT_CHARGING_EVENT = 5,
+	QPNP_SMB5_TYPEC_PLUGIN_EVENT = 6,
+};
+
+extern int qpnp_smb5_reg_notifier(struct notifier_block *nb);
+extern int qpnp_smb5_unreg_notifier(struct notifier_block *nb);
+extern int qpnp_smb5_notifier_call_chain(unsigned long event, int val);
+
 #endif /* __SMB5_CHARGER_H */

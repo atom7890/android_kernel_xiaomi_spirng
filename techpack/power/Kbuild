@@ -1,0 +1,4 @@
+obj-$(CONFIG_SPRING_CHARGER_PARTITION) += charger-partition/
+ifneq ($(filter m,$(CONFIG_SPRING_XIAOMI_CHARGE_PUMPS) $(CONFIG_SPRING_XIAOMI_CHARGING)),)
+obj-m += xiaomi-charging/
+endif

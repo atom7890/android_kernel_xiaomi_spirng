@@ -1,0 +1,14 @@
+config SPRING_CHARGER_PARTITION
+	tristate "Spring charger partition"
+	depends on SCSI && BLOCK
+	depends on m
+	default m if ARCH_BLAIR
+
+config SPRING_XIAOMI_CHARGE_PUMPS
+	tristate "Spring Xiaomi charge pumps and fuel gauge"
+	depends on ARCH_BLAIR && I2C && IIO && QPNP_SMB5 && SPRING_CHARGER_PARTITION && m
+	default m
+
+config SPRING_XIAOMI_CHARGING
+	tristate "Spring Xiaomi charging and fuel gauge drivers"
+	depends on ARCH_BLAIR && I2C && IIO && QPNP_SMB5 && SPRING_CHARGER_PARTITION && m
