@@ -500,9 +500,14 @@ static ssize_t compatible_all_set(struct device *dev,
 	int rc;
 	int i;
 	int irqf;
+	void *resources;
 	struct  fpc1020_data *fpc1020 = dev_get_drvdata(dev);
 	dev_err(dev, "compatible all enter %d\n", fpc1020->compatible_enabled);
 	if(!strncmp(buf, "enable", strlen("enable")) && fpc1020->compatible_enabled != 1){
+		resources = devres_open_group(dev, fpc1020, GFP_KERNEL);
+		if (!resources)
+			return -ENOMEM;
+
 		rc = fpc1020_request_named_gpio(fpc1020, "fp-gpio-irq",
 			&fpc1020->irq_gpio);
 		if (rc)
@@ -561,6 +566,7 @@ static ssize_t compatible_all_set(struct device *dev,
 
 		/* Request that the interrupt should be wakeable */
 		enable_irq_wake(gpio_to_irq(fpc1020->irq_gpio));
+		devres_close_group(dev, resources);
 		fpc1020->compatible_enabled = 1;
 		if (of_property_read_bool(dev->of_node, "fpc,enable-on-boot")) {
 			dev_info(dev, "Enabling hardware\n");
@@ -569,22 +575,14 @@ static ssize_t compatible_all_set(struct device *dev,
 		}
 		hw_reset(fpc1020);
 	}else if(!strncmp(buf, "disable", strlen("disable")) && fpc1020->compatible_enabled != 0){
-		if (gpio_is_valid(fpc1020->irq_gpio))
-		{
-			gpio_free(fpc1020->irq_gpio);
-			pr_info("remove irq_gpio success\n");
-		}
-		if (gpio_is_valid(fpc1020->rst_gpio))
-		{
-			gpio_free(fpc1020->rst_gpio);
-			pr_info("remove rst_gpio success\n");
-		}
-		devm_free_irq(dev, gpio_to_irq(fpc1020->irq_gpio), fpc1020);
+		disable_irq_wake(gpio_to_irq(fpc1020->irq_gpio));
+		devres_release_group(dev, fpc1020);
 		fpc1020->compatible_enabled = 0;
 	}
 	return count;
 exit:
-	return -EINVAL;
+	devres_release_group(dev, resources);
+	return rc;
 }
 static DEVICE_ATTR(compatible_all, S_IWUSR, NULL, compatible_all_set);
 #endif
@@ -642,7 +640,8 @@ static int fpc1020_request_named_gpio(struct fpc1020_data *fpc1020,
 
 	rc = devm_gpio_request(dev, *gpio, label);
 	if (rc) {
-		dev_err(dev, "failed to request gpio %d\n", *gpio);
+		dev_err(dev, "failed to request %s GPIO %d: %d\n",
+			label, *gpio, rc);
 		return rc;
 	}
 	dev_dbg(dev, "%s %d\n", label, *gpio);

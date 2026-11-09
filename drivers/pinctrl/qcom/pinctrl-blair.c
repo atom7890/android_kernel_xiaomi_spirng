@@ -5,6 +5,7 @@
  */
 
 #include <linux/module.h>
+#include <linux/slab.h>
 #include <linux/of.h>
 #include <linux/platform_device.h>
 #include <linux/pinctrl/pinctrl.h>
@@ -1697,7 +1698,18 @@ static const struct msm_pinctrl_soc_data blair_pinctrl = {
 
 static int blair_pinctrl_probe(struct platform_device *pdev)
 {
-	return msm_pinctrl_probe(pdev, &blair_pinctrl);
+	struct msm_pinctrl_soc_data *soc;
+
+	if (!of_property_read_bool(pdev->dev.of_node, "xiaomi,spring-fingerprint-irq"))
+		return msm_pinctrl_probe(pdev, &blair_pinctrl);
+
+	soc = devm_kmemdup(&pdev->dev, &blair_pinctrl, sizeof(*soc), GFP_KERNEL);
+	if (!soc)
+		return -ENOMEM;
+
+	/* Spring supplies its reserved list in DT, with GPIO 17 available. */
+	soc->reserved_gpios = NULL;
+	return msm_pinctrl_probe(pdev, soc);
 }
 
 static const struct of_device_id blair_pinctrl_of_match[] = {
