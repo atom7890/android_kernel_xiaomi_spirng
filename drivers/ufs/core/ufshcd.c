@@ -28,6 +28,7 @@
 #include <scsi/scsi_driver.h>
 #include <scsi/scsi_eh.h>
 #include "ufshcd-priv.h"
+#include "spring-ufs.h"
 #include <ufs/ufs_quirks.h>
 #include <ufs/unipro.h>
 #include "ufs-sysfs.h"
@@ -4936,6 +4937,7 @@ void ufshcd_update_evt_hist(struct ufs_hba *hba, u32 id, u32 val)
 	e->tstamp[e->pos] = local_clock();
 	e->cnt += 1;
 	e->pos = (e->pos + 1) % UFS_EVENT_HIST_LENGTH;
+	spring_ufs_count_uic_error(id, val);
 
 	ufshcd_vops_event_notify(hba, id, &val);
 }
@@ -6573,6 +6575,7 @@ static void ufshcd_err_handler(struct work_struct *work)
 	int pmc_err;
 
 	hba = container_of(work, struct ufs_hba, eh_work);
+	spring_ufs_record_error("ufshcd_err_handler\n");
 
 	dev_info(hba->dev,
 		 "%s started; HBA state %s; powered %d; shutting down %d; saved_err = %d; saved_uic_err = %d; force_reset = %d%s\n",
@@ -7678,6 +7681,7 @@ static int ufshcd_abort(struct scsi_cmnd *cmd)
 	bool outstanding;
 	u32 reg;
 
+	spring_ufs_record_error("ufshcd_abort\n");
 	WARN_ONCE(tag < 0, "Invalid tag %d\n", tag);
 
 	if (ufshcd_use_mcq_hooks(hba)) {
@@ -8815,8 +8819,10 @@ static int ufshcd_probe_hba(struct ufs_hba *hba, bool init_dev_params)
 	hba->ufshcd_state = UFSHCD_STATE_RESET;
 
 	ret = ufshcd_link_startup(hba);
-	if (ret)
+	if (ret) {
+		spring_ufs_record_error("link_startup_fail\n");
 		goto out;
+	}
 
 	if (hba->quirks & UFSHCD_QUIRK_SKIP_PH_CONFIGURATION)
 		goto out;
@@ -8946,6 +8952,8 @@ static void ufshcd_async_scan(void *data, async_cookie_t cookie)
 
 	/* Probe and add UFS logical units  */
 	ret = ufshcd_add_lus(hba);
+	if (!ret)
+		complete(&ufs_xiaomi_comp);
 
 out:
 	pm_runtime_put_sync(hba->dev);

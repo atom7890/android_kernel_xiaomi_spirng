@@ -10,6 +10,7 @@
 #include <linux/of.h>
 #include <linux/platform_device.h>
 #include <linux/module.h>
+#include <linux/mutex.h>
 #include <linux/reboot.h>
 #include <linux/pm.h>
 #include <linux/of_address.h>
@@ -18,8 +19,8 @@
 #include <linux/of_platform.h>
 #include <linux/panic_notifier.h>
 
-#define RESTART_REASON_PANIC  6
-#define RESTART_REASON_NORMAL 7
+static DEFINE_MUTEX(ffu_reboot_lock);
+static struct qcom_reboot_reason *ffu_reboot;
 
 struct qcom_reboot_reason {
 	struct device *dev;
@@ -43,6 +44,8 @@ static struct poweroff_reason pon_reasons[] = {
 	{ "dm-verity enforcing",	0x05, 0x1 },
 	{ "keys clear",			0x06, 0x1 },
 	{ "panic",			0x21, 0x1 },
+	{ "ffus",			0x40, 0x1 },
+	{ "ffuf",			0x41, 0x1 },
 	{ NULL,   			0x20, 0x1 },
 	{}
 };
@@ -55,6 +58,8 @@ static  struct poweroff_reason imem_pon_reasons[] = {
 	{ "dm-verity enforcing",        0x77665509, 0x4 },
 	{ "keys clear",                 0x7766550a, 0x4 },
 	{ "panic",                 	0x77665521, 0x4 },
+	{ "ffus",                       0x77665540, 0x4 },
+	{ "ffuf",                       0x77665541, 0x4 },
 	{ NULL,                 	0x77665520, 0x4 },
 	{}
 };
@@ -77,7 +82,8 @@ static int qcom_reboot_reason_reboot(struct notifier_block *this,
 
 
 	if (!cmd){
-		reason += RESTART_REASON_NORMAL;
+		while (reason->cmd)
+			reason++;
 		nvmem_cell_write(reboot->nvmem_cell, &reason->pon_reason, reason->size);
 
 		return NOTIFY_OK;
@@ -98,13 +104,44 @@ static int qcom_reboot_reason_reboot(struct notifier_block *this,
 	return NOTIFY_OK;
 }
 
+int ufs_ffu_reboot_reason_reboot(void *data)
+{
+	const char *cmd = data;
+	struct qcom_reboot_reason *reboot;
+	struct poweroff_reason *reason;
+	int ret = NOTIFY_BAD;
+	int rc;
+
+	mutex_lock(&ffu_reboot_lock);
+	reboot = ffu_reboot;
+	if (!reboot || !cmd)
+		goto out;
+
+	for (reason = reboot->reasons; reason->cmd; reason++) {
+		if (strcmp(cmd, reason->cmd))
+			continue;
+		rc = nvmem_cell_write(reboot->nvmem_cell, &reason->pon_reason,
+				      reason->size);
+		if (rc < 0)
+			pr_err("FFU reason store failed, rc=%d\n", rc);
+		else
+			ret = NOTIFY_OK;
+		break;
+	}
+out:
+	mutex_unlock(&ffu_reboot_lock);
+	return ret;
+}
+EXPORT_SYMBOL(ufs_ffu_reboot_reason_reboot);
+
 static int panic_prep_restart(struct notifier_block *this,
 			      unsigned long event, void *ptr)
 {
 	struct qcom_reboot_reason *reboot = container_of(this, struct qcom_reboot_reason, panic_nb);
 	struct poweroff_reason *reason = reboot->reasons;
 
-	reason += RESTART_REASON_PANIC;
+	while (strcmp(reason->cmd, "panic"))
+		reason++;
 	nvmem_cell_write(reboot->nvmem_cell, &reason->pon_reason, reason->size);
 
 	return NOTIFY_DONE;
@@ -144,11 +181,20 @@ static int qcom_reboot_reason_probe(struct platform_device *pdev)
 	reboot->panic_nb.priority = INT_MAX;
 	atomic_notifier_chain_register(&panic_notifier_list, &reboot->panic_nb);
 
+	mutex_lock(&ffu_reboot_lock);
+	ffu_reboot = reboot;
+	mutex_unlock(&ffu_reboot_lock);
+
 	return 0;
 }
 static int qcom_reboot_reason_remove(struct platform_device *pdev)
 {
 	struct qcom_reboot_reason *reboot = platform_get_drvdata(pdev);
+
+	mutex_lock(&ffu_reboot_lock);
+	if (ffu_reboot == reboot)
+		ffu_reboot = NULL;
+	mutex_unlock(&ffu_reboot_lock);
 
 	atomic_notifier_chain_unregister(&panic_notifier_list, &reboot->panic_nb);
 	unregister_reboot_notifier(&reboot->reboot_nb);
