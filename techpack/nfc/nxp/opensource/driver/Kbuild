@@ -1,0 +1,4 @@
+obj-m += nxp-nci.o
+nxp-nci-y := nfc/common.o nfc/common_nxp.o nfc/common_qcom.o nfc/ese_cold_reset.o nfc/i2c_drv.o
+nfc_src := $(if $(KBUILD_EXTMOD),$(src),$(srctree)/$(src))
+ccflags-y += -I$(nfc_src) -I$(nfc_src)/nfc -I$(nfc_src)/include/uapi/linux/nfc
