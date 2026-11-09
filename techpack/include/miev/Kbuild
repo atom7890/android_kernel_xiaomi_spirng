@@ -1,0 +1,3 @@
+obj-m += miev.o
+miev-y := midevice.o mievent.o
+ccflags-y += -DCONFIG_MIEV=1
