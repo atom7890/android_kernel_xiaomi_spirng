@@ -1,0 +1,8 @@
+ifeq ($(KBUILD_EXTMOD),)
+# Use the downstream Blair audio configuration for the integrated build.
+export AUDIO_ROOT := $(srctree)/techpack/audio/audio-kernel
+export KERNEL_SRC := $(srctree)
+export MODNAME := audio_dlkm
+endif
+
+obj-y := dsp/ ipc/ soc/ asoc/ asoc/codecs/ asoc/codecs/lpass-cdc/ asoc/codecs/bolero/ asoc/codecs/wcd939x/ asoc/codecs/wsa884x/ asoc/codecs/wcd938x/ asoc/codecs/wsa883x/ asoc/codecs/wcd937x/ asoc/codecs/wcd9378/ asoc/codecs/sipa/ asoc/codecs/fs15xxx/ asoc/codecs/lct_audio_info/
