@@ -1,0 +1,2 @@
+obj-m += dynamic_readahead.o
+ccflags-y += -I$(srctree)/drivers/thermal -I$(srctree)/drivers/android -I$(srctree)/kernel/sched

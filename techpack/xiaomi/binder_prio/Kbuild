@@ -1,0 +1,3 @@
+# SPDX-License-Identifier: GPL-2.0-only
+obj-m += binder_prio.o
+ccflags-y += -I$(srctree)/kernel/sched -I$(srctree)/drivers/android

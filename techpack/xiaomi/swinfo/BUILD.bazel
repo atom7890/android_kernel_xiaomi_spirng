@@ -1,0 +1,46 @@
+load("//build/kernel/kleaf:kernel.bzl", "ddk_module")
+load("//build/bazel_common_rules/dist:dist.bzl", "copy_to_dist_dir")
+
+genrule(
+    name = "configured_swinfo",
+    srcs = [
+        "//msm-kernel:spring_gki/.config",
+        "swinfo_func.c",
+    ],
+    outs = ["swinfo_generated.c"],
+    cmd = """
+        set -eu
+        set -o pipefail
+        {
+            printf IKCFG_ST
+            gzip -n -c $(location //msm-kernel:spring_gki/.config)
+            printf IKCFG_ED
+        } | od -An -v -tu1 | awk '
+            BEGIN { print "static const unsigned char platform_config_blob[] = {" }
+            { for (i = 1; i <= NF; i++) printf "%s,", $$i; print "" }
+            END { print "};" }
+        ' > $@
+        sed '/^#include "platform_config_data.h"$$/d' \
+            $(location swinfo_func.c) >> $@
+    """,
+)
+
+ddk_module(
+    name = "spring_gki_swinfo",
+    srcs = ["swinfo.c", ":swinfo_generated.c"],
+    copts = [
+        "-include",
+        "$(location :swinfo_generated.c)",
+    ],
+    out = "swinfo.ko",
+    kernel_build = "//msm-kernel:spring_gki",
+    deps = ["//msm-kernel:all_headers"],
+)
+
+copy_to_dist_dir(
+    name = "spring_gki_swinfo_dist",
+    data = [":spring_gki_swinfo"],
+    flat = True,
+    wipe_dist_dir = False,
+    allow_duplicate_filenames = False,
+)

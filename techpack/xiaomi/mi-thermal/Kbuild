@@ -1,0 +1,2 @@
+obj-m += mi_thermal_interface.o
+ccflags-y += -I$(srctree) -I$(srctree)/drivers/thermal -I$(srctree)/drivers/android -I$(srctree)/kernel/sched

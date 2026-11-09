@@ -1,0 +1,21 @@
+load("//build/kernel/kleaf:kernel.bzl", "ddk_module")
+load("//build/bazel_common_rules/dist:dist.bzl", "copy_to_dist_dir")
+
+ddk_module(
+    name = "spring_gki_mi_thermal_interface",
+    srcs = ["mi_thermal_interface.c"],
+    out = "mi_thermal_interface.ko",
+    kernel_build = "//msm-kernel:spring_gki",
+    deps = [
+        "//msm-kernel:all_headers",
+        "//msm-kernel:spring_thermal_internal_headers",
+    ],
+)
+
+copy_to_dist_dir(
+    name = "spring_gki_mi_thermal_interface_dist",
+    data = [":spring_gki_mi_thermal_interface"],
+    flat = True,
+    wipe_dist_dir = False,
+    allow_duplicate_filenames = False,
+)

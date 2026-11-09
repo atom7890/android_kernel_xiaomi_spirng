@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: GPL-2.0-only
+obj-m += cpumaxfreq.o
+obj-m += bootinfo/ dynamic-readahead/ hardwareinfo/ kshrink-slabd/
+obj-m += mi-memqr/ mi-thermal/ sla/ wifi-ant-check/
+obj-m += millet/
+obj-m += swinfo/
+obj-m += binder_prio/ mi_rmap_efficiency/ perfhelper/ simtray/

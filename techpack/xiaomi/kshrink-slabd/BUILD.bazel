@@ -1,0 +1,18 @@
+load("//build/kernel/kleaf:kernel.bzl", "ddk_module")
+load("//build/bazel_common_rules/dist:dist.bzl", "copy_to_dist_dir")
+
+ddk_module(
+    name = "spring_gki_kshrink_slabd",
+    srcs = ["kshrink_slabd.c"],
+    out = "kshrink_slabd.ko",
+    kernel_build = "//msm-kernel:spring_gki",
+    deps = ["//msm-kernel:all_headers"],
+)
+
+copy_to_dist_dir(
+    name = "spring_gki_kshrink_slabd_dist",
+    data = [":spring_gki_kshrink_slabd"],
+    flat = True,
+    wipe_dist_dir = False,
+    allow_duplicate_filenames = False,
+)

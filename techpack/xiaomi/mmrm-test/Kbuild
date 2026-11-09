@@ -1,0 +1,3 @@
+obj-m += mmrm_test_module.o
+mmrm_test_module-y := mmrm_test.o mmrm_test_internal.o
+ccflags-y += -DCONFIG_MSM_MMRM=1

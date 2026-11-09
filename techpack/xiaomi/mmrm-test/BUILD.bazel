@@ -1,0 +1,27 @@
+
+load("//build/kernel/kleaf:kernel.bzl", "ddk_module")
+load("//build/bazel_common_rules/dist:dist.bzl", "copy_to_dist_dir")
+
+ddk_module(
+    name = "spring_gki_mmrm_test",
+    srcs = [
+        "mmrm_test.c",
+        "mmrm_test_internal.c",
+        "mmrm_test_internal.h",
+    ],
+    out = "mmrm_test_module.ko",
+    kernel_build = "//msm-kernel:spring_gki",
+    local_defines = ["CONFIG_MSM_MMRM=1"],
+    deps = [
+        "//msm-kernel:all_headers",
+        "//vendor/qcom/opensource/mmrm-driver:spring_gki_mmrm_driver",
+    ],
+)
+
+copy_to_dist_dir(
+    name = "spring_gki_mmrm_test_dist",
+    data = [":spring_gki_mmrm_test"],
+    flat = True,
+    wipe_dist_dir = False,
+    allow_duplicate_filenames = False,
+)

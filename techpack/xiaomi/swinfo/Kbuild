@@ -1,0 +1,18 @@
+obj-m += swinfo.o
+ifeq ($(KBUILD_EXTMOD),)
+targets += swinfo_generated.c
+
+quiet_cmd_swinfo = GEN     $@
+      cmd_swinfo = { printf IKCFG_ST; gzip -n -c $(objtree)/.config; printf IKCFG_ED; } | \
+	od -An -v -tu1 | awk 'BEGIN { print "static const unsigned char platform_config_blob[] = {" } \
+	{ for (i = 1; i <= NF; i++) printf "%s,", $$i; print "" } END { print "};" }' > $@; \
+	sed '/"platform_config_data[.]h"$$/d' $(srctree)/$(src)/swinfo_func.c >> $@
+
+$(obj)/swinfo_generated.c: $(objtree)/.config $(srctree)/$(src)/swinfo_func.c FORCE
+	$(call if_changed,swinfo)
+
+$(obj)/swinfo.o: $(obj)/swinfo_generated.c
+ccflags-y += -include $(obj)/swinfo_generated.c
+else
+ccflags-y += -include $(src)/swinfo_generated.c
+endif

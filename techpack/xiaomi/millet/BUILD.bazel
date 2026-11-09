@@ -1,0 +1,74 @@
+load("//build/kernel/kleaf:kernel.bzl", "ddk_module")
+load("//build/bazel_common_rules/dist:dist.bzl", "copy_to_dist_dir")
+
+
+ddk_module(
+    name = "spring_gki_millet_core",
+    srcs = ["millet_core.c"] + glob(["**/*.h"]),
+    out = "millet_core.ko",
+    kernel_build = "//msm-kernel:spring_gki",
+    deps = ['//msm-kernel:all_headers', '//msm-kernel:spring_millet_internal_headers'],
+)
+
+
+ddk_module(
+    name = "spring_gki_binder_gki",
+    srcs = ["binder_gki.c"] + glob(["**/*.h"]),
+    out = "binder_gki.ko",
+    kernel_build = "//msm-kernel:spring_gki",
+    deps = [":spring_gki_millet_core", '//msm-kernel:all_headers', '//msm-kernel:spring_millet_internal_headers'],
+)
+
+
+ddk_module(
+    name = "spring_gki_millet_binder",
+    srcs = ["millet_binder.c"] + glob(["**/*.h"]),
+    out = "millet_binder.ko",
+    kernel_build = "//msm-kernel:spring_gki",
+    deps = ['//msm-kernel:all_headers', '//msm-kernel:spring_millet_internal_headers', ':spring_gki_millet_core', ':spring_gki_binder_gki'],
+)
+
+
+ddk_module(
+    name = "spring_gki_millet_pkg",
+    srcs = ["millet_pkg.c"] + glob(["**/*.h"]),
+    out = "millet_pkg.ko",
+    kernel_build = "//msm-kernel:spring_gki",
+    deps = ['//msm-kernel:all_headers', '//msm-kernel:spring_millet_internal_headers', ':spring_gki_millet_core'],
+)
+
+
+ddk_module(
+    name = "spring_gki_millet_hs",
+    srcs = ["millet_hs.c"] + glob(["**/*.h"]),
+    out = "millet_hs.ko",
+    kernel_build = "//msm-kernel:spring_gki",
+    deps = ['//msm-kernel:all_headers', '//msm-kernel:spring_millet_internal_headers', ':spring_gki_millet_core'],
+)
+
+
+ddk_module(
+    name = "spring_gki_millet_sig",
+    srcs = ["millet_sig.c"] + glob(["**/*.h"]),
+    out = "millet_sig.ko",
+    kernel_build = "//msm-kernel:spring_gki",
+    deps = ['//msm-kernel:all_headers', '//msm-kernel:spring_millet_internal_headers', ':spring_gki_millet_core'],
+)
+
+
+ddk_module(
+    name = "spring_gki_millet_oem_cgroup",
+    srcs = ["oem_cgroup.c"] + glob(["**/*.h"]),
+    out = "millet_oem_cgroup.ko",
+    kernel_build = "//msm-kernel:spring_gki",
+    deps = ['//msm-kernel:all_headers', '//msm-kernel:spring_millet_internal_headers'],
+)
+
+
+copy_to_dist_dir(
+    name = "spring_gki_millet_dist",
+    data = [':spring_gki_millet_core', ':spring_gki_binder_gki', ':spring_gki_millet_binder', ':spring_gki_millet_pkg', ':spring_gki_millet_hs', ':spring_gki_millet_sig', ':spring_gki_millet_oem_cgroup'],
+    flat = True,
+    wipe_dist_dir = False,
+    allow_duplicate_filenames = False,
+)

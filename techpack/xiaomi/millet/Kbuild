@@ -1,0 +1,9 @@
+obj-m += millet_core.o
+obj-m += binder_gki.o
+obj-m += millet_binder.o
+obj-m += millet_pkg.o
+obj-m += millet_hs.o
+obj-m += millet_sig.o
+obj-m += millet_oem_cgroup.o
+millet_oem_cgroup-y := oem_cgroup.o
+ccflags-y += -I$(srctree) -I$(srctree)/drivers/thermal -I$(srctree)/drivers/android -I$(srctree)/kernel/sched
