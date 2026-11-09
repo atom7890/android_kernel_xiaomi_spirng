@@ -1,0 +1,2 @@
+obj-$(CONFIG_SPRING_MI_MEMORY) += mi-memory/
+obj-$(CONFIG_SPRING_UFS_FFU) += ufs-ffu/

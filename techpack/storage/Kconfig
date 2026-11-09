@@ -1,0 +1,11 @@
+config SPRING_MI_MEMORY
+	tristate "Spring memory reporting"
+	depends on SCSI_UFSHCD
+	depends on m
+	default m if ARCH_BLAIR
+
+config SPRING_UFS_FFU
+	tristate "Spring UFS firmware update"
+	depends on SCSI_UFSHCD && POWER_RESET_QCOM_REBOOT_REASON
+	depends on m
+	default m if ARCH_BLAIR

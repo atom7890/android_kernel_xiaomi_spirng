@@ -1,0 +1,163 @@
+{
+  "reference_module_sha256": "c34d1a344f2e533d8320a9b23b5fb86ef5d5fc1509101a1057e50979d879c299",
+  "updates": [
+    {
+      "vendor": "HG",
+      "model": "CBE06-1280CHAC",
+      "from_revision": "00.0",
+      "to_revision": "50.0",
+      "payload": "HG_128G_50B",
+      "size": 696320
+    },
+    {
+      "vendor": "HG",
+      "model": "CBE06-1280CHAC",
+      "from_revision": "50.0",
+      "to_revision": "15.6",
+      "payload": "HG_128G_156",
+      "size": 696320
+    },
+    {
+      "vendor": "HG",
+      "model": "CBE06-1280CHAC",
+      "from_revision": "13.0",
+      "to_revision": "15.6",
+      "payload": "HG_128G_156",
+      "size": 696320
+    },
+    {
+      "vendor": "HG",
+      "model": "CBE06-1280CHAC",
+      "from_revision": "14.2",
+      "to_revision": "15.6",
+      "payload": "HG_128G_156",
+      "size": 696320
+    },
+    {
+      "vendor": "HG",
+      "model": "CBE06-1280CHAC",
+      "from_revision": "15.0",
+      "to_revision": "15.6",
+      "payload": "HG_128G_156",
+      "size": 696320
+    },
+    {
+      "vendor": "HG",
+      "model": "CBE06-1280CHAC",
+      "from_revision": "15.2",
+      "to_revision": "15.6",
+      "payload": "HG_128G_156",
+      "size": 696320
+    },
+    {
+      "vendor": "HG",
+      "model": "CBE06-1280CHAC",
+      "from_revision": "15.4",
+      "to_revision": "15.6",
+      "payload": "HG_128G_156",
+      "size": 696320
+    },
+    {
+      "vendor": "HG",
+      "model": "CBE06-2560CHAC",
+      "from_revision": "13.0",
+      "to_revision": "15.6",
+      "payload": "HG_256G_156",
+      "size": 696320
+    },
+    {
+      "vendor": "HG",
+      "model": "CBE06-2560CHAC",
+      "from_revision": "14.2",
+      "to_revision": "15.6",
+      "payload": "HG_256G_156",
+      "size": 696320
+    },
+    {
+      "vendor": "HG",
+      "model": "CBE06-2560CHAC",
+      "from_revision": "15.0",
+      "to_revision": "15.6",
+      "payload": "HG_256G_156",
+      "size": 696320
+    },
+    {
+      "vendor": "HG",
+      "model": "CBE06-2560CHAC",
+      "from_revision": "15.2",
+      "to_revision": "15.6",
+      "payload": "HG_256G_156",
+      "size": 696320
+    },
+    {
+      "vendor": "HG",
+      "model": "CBE06-2560CHAC",
+      "from_revision": "15.4",
+      "to_revision": "15.6",
+      "payload": "HG_256G_156",
+      "size": 696320
+    },
+    {
+      "vendor": "XBSTOR",
+      "model": "XBUSC1A18A8TG2",
+      "from_revision": "0301",
+      "to_revision": "0315",
+      "payload": "XBSTOR_0315",
+      "size": 692224
+    },
+    {
+      "vendor": "XBSTOR",
+      "model": "XBUSC1A18A8TG2",
+      "from_revision": "0306",
+      "to_revision": "0315",
+      "payload": "XBSTOR_0315",
+      "size": 692224
+    },
+    {
+      "vendor": "XBSTOR",
+      "model": "XBUSC1A18A8TG2",
+      "from_revision": "0309",
+      "to_revision": "0315",
+      "payload": "XBSTOR_0315",
+      "size": 692224
+    },
+    {
+      "vendor": "XBSTOR",
+      "model": "XBUSC1A19A8TG3",
+      "from_revision": "0306",
+      "to_revision": "0315",
+      "payload": "XBSTOR_0315",
+      "size": 692224
+    },
+    {
+      "vendor": "XBSTOR",
+      "model": "XBUSC1A19A8TG3",
+      "from_revision": "0309",
+      "to_revision": "0315",
+      "payload": "XBSTOR_0315",
+      "size": 692224
+    }
+  ],
+  "payloads": {
+    "HG_128G_156": {
+      "file_offset": 4168736,
+      "size": 696320,
+      "sha256": "c6d704c60f490f94c270afe9bdc430aaf8696f3b3c7761b09471072a4dab56f2"
+    },
+    "HG_128G_50B": {
+      "file_offset": 3104,
+      "size": 696320,
+      "sha256": "f6ed66ae50796e0ea43546fb1178b64b720610bfd2e9a8570e562cc111e9e018"
+    },
+    "HG_256G_156": {
+      "file_offset": 4865056,
+      "size": 696320,
+      "sha256": "230ff22590fe3300bc0b8c9678cf7d4728c5bca9ea6f272a777a1757b356829b"
+    },
+    "XBSTOR_0315": {
+      "file_offset": 3476512,
+      "size": 692224,
+      "sha256": "2e06a881521f0c531c134ae56ab28009fc9958e38582714b8dddb17d6c0563ae"
+    }
+  }
+}

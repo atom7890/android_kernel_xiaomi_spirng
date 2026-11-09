@@ -1,0 +1,3 @@
+obj-$(CONFIG_SPRING_MI_MEMORY) += mi_memory.o
+mi_memory-y := mi_memory_sysfs.o mi_ufs_info.o mi_dram_info.o mv.o mem_interface.o
+ccflags-y += -I$(srctree)/drivers/ufs/host -I$(srctree)/drivers/ufs/core

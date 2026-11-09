@@ -1,0 +1,3 @@
+obj-$(CONFIG_SPRING_UFS_FFU) += ufs_ffu.o
+ufs_ffu-y := spring-ffu-main.o spring-ffu-partition.o spring-ffu-policy.o spring-ffu-match.o
+ufs_ffu-y += spring-ffu-write.o spring-ffu-finish.o

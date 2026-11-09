@@ -1,0 +1,19 @@
+# Spring UFS firmware update source
+
+The reference module from Infinity 17 has identical vendor ramdisk and vendor_dlkm copies. The manifest records its SHA-256, 17 update rules, and the four referenced firmware payloads. The extractor accepts only the verified reference and writes the payloads outside the source tree.
+
+The V6 build compiled the update matcher and WRITE BUFFER helper as objects. The helper uses mode 0x0e, a 24-bit offset and length, 512 KiB chunks, no retries, and a 15-second timeout. It validates the payload size and SHA-256 before issuing a write. The caller must identify the exact UFS device, hold its reference, serialize the transaction, and enforce the boot and failure guards.
+
+The original reads a partition-provided FFU table as well as the built-in table. It checks partition bounds, alignment and CRC, reads off-charge and previous FFU boot status from the device tree, and distinguishes failure of a partition-sourced update from failure of a built-in update. The helpers for those paths still need integration with device discovery and update orchestration. The module defaults to a read-only probe. No UFS firmware was written during verification.
+
+The policy helper decodes the original 4 KiB FFU header and its 256-byte record stride. It rejects oversized tables, nonmatching devices and revisions, unaligned offsets, and payloads whose rounded read would exceed the partition. Payload verification uses the original reflected CRC-32 polynomial with a zero seed. The boot guard rejects off-charge boots and previous FFU failure reason 0x41, and requires both device tree properties to be readable.
+
+V6 compiled the policy helper. Host fixtures exercised a valid record and rejected malformed bounds, alignment, count, CRC, and boot flags. The partition helper uses 4 KiB sectors and READ(10) chunks up to 128 blocks. It requires an explicit partition extent and confirms the header still matches the parsed copy before clearing it on failure. Stock uses partition index 16. The probe discovers the LUN 0 disk and opens partition 16 read-only.
+
+The reboot helper uses the original 20 ms delay and FFU success/failure reasons. It passes the same reason to the reboot notifier so the notifier preserves the FFU marker. It returns an error if the failure header cannot be cleared or the reboot reason cannot be stored. The partition and reboot helpers compiled against V6. Hardware behavior remains unverified.
+
+Stock waits for `ufs_xiaomi_comp`, then runs delayed work. The worker looks up SCSI host 0 and channel 0, target 0, LUNs 0 through 5. It checks the host template's first six proc-name characters against `ufshcd`, then looks up partition index 16 on the selected disk. It converts the start and length from 512-byte sectors to 4 KiB blocks. The probe requires the rescue label and checks both values for 4 KiB alignment. Its delayed worker makes up to ten attempts one second apart while the disk or partition is unavailable. It cancels pending work on unload. Integration with the stock completion is still pending.
+
+The dry-run worker checks matching rescue records and reads the bounded payload to verify its CRC. It checks the built-in rules when no partition record matches. A CRC verifies integrity only.
+
+The built-in update path is opt-in through the read-only module parameter `apply_builtin`. It requires a matching stock rule and loads the named payload through the kernel firmware loader. The writer checks the exact payload size and SHA-256 before issuing a command. Only a transfer attempt can reach the reboot handoff. Use the paired Spring reboot-reason provider, which reports failures to store the FFU marker. The partition-sourced path remains read-only because its CRC only checks integrity. The combined module was build-checked without issuing firmware writes.
