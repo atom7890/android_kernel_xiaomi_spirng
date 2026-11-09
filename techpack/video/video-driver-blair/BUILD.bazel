@@ -1,0 +1,50 @@
+load("//build/kernel/kleaf:kernel.bzl", "ddk_headers", "ddk_module")
+load("//build/bazel_common_rules/dist:dist.bzl", "copy_to_dist_dir")
+
+package(default_visibility = ["//visibility:public"])
+
+ddk_headers(
+    name = "video_driver_headers",
+    hdrs = glob([
+        "driver/vidc/inc/*.h",
+        "driver/platform/common/inc/*.h",
+        "driver/platform/blair/inc/*.h",
+        "driver/variant/ar50lt/inc/*.h",
+        "include/uapi/vidc/media/*.h",
+    ]),
+    includes = [
+        "driver/vidc/inc",
+        "driver/platform/common/inc",
+        "driver/platform/blair/inc",
+        "driver/variant/ar50lt/inc",
+        "include/uapi/vidc",
+    ],
+)
+
+ddk_module(
+    name = "spring_gki_video_driver_modules",
+    kernel_build = "//msm-kernel:spring_gki",
+    srcs = glob([
+        "driver/vidc/src/*.c",
+        "driver/platform/common/src/*.c",
+        "driver/platform/blair/src/*.c",
+        "driver/variant/ar50lt/src/*.c",
+    ]),
+    out = "msm_video.ko",
+    deps = [
+        "//msm-kernel:all_headers",
+        ":video_driver_headers",
+    ],
+    local_defines = [
+        "CONFIG_MSM_VIDC_BLAIR=1",
+        "CONFIG_MSM_VIDC_AR50LT=1",
+    ],
+)
+
+copy_to_dist_dir(
+    name = "spring_gki_video_driver_modules_dist",
+    data = [":spring_gki_video_driver_modules"],
+    flat = True,
+    wipe_dist_dir = False,
+    allow_duplicate_filenames = False,
+)
