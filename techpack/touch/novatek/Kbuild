@@ -1,0 +1,5 @@
+obj-$(CONFIG_SPRING_NOVATEK) += nt36xxx_spi.o
+nt36xxx_spi-y := nt36xxx.o nt36xxx_fw_update.o nt36xxx_ext_proc.o nt36xxx_mp_ctrlram.o spring-novatek.o spring-novatek-touch.o
+ccflags-y += -include $(srctree)/techpack/include/spring-panel-event-notifier.h
+ccflags-y += -Wno-macro-redefined
+CFLAGS_spring-novatek-touch.o += -DCONFIG_MIEV_MODULE=1 -I$(srctree)/techpack/include

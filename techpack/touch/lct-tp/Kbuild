@@ -1,0 +1,2 @@
+obj-$(CONFIG_SPRING_LCT_TOUCH) += lct_tp.o
+ccflags-y += -I$(srctree)/drivers/thermal -I$(srctree)/drivers/android -I$(srctree)/kernel/sched

@@ -1,0 +1,30 @@
+load("//build/kernel/kleaf:kernel.bzl", "ddk_module")
+load("//build/bazel_common_rules/dist:dist.bzl", "copy_to_dist_dir")
+
+ddk_module(
+    name = "spring_gki_xiaomi_tp",
+    srcs = [
+        "spring_abi_checks.c",
+        "xiaomi_touch.h",
+        "xiaomi_touch_type_common.h",
+        "xiaomi_touch_core.c",
+        "xiaomi_touch_device.c",
+        "xiaomi_touch_evdev.c",
+        "xiaomi_touch_knock_data.c",
+        "xiaomi_touch_mode.c",
+        "xiaomi_touch_operations.c",
+        "xiaomi_touch_proc.c",
+        "xiaomi_touch_sys.c",
+    ],
+    out = "xiaomi_tp.ko",
+    kernel_build = "//msm-kernel:spring_gki",
+    deps = ["//msm-kernel:all_headers"],
+)
+
+copy_to_dist_dir(
+    name = "spring_gki_xiaomi_tp_dist",
+    data = [":spring_gki_xiaomi_tp"],
+    flat = True,
+    wipe_dist_dir = False,
+    allow_duplicate_filenames = False,
+)

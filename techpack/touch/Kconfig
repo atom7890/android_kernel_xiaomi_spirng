@@ -1,0 +1,22 @@
+config SPRING_NOVATEK
+	tristate "Spring Novatek touchscreen"
+	depends on SPI && INPUT && QCOM_PANEL_EVENT_NOTIFIER
+	depends on m
+	default m if ARCH_BLAIR
+
+config SPRING_FOCALTECH
+	tristate "Spring FocalTech touchscreen"
+	depends on SPI && INPUT && QCOM_PANEL_EVENT_NOTIFIER
+	depends on m
+	default m if ARCH_BLAIR
+
+config SPRING_LCT_TOUCH
+	tristate "Spring Longcheer touch interface"
+	depends on PROC_FS
+	depends on m
+	default m if ARCH_BLAIR
+
+config SPRING_XIAOMI_TOUCH
+	tristate "Spring Xiaomi touch interface"
+	depends on INPUT && PROC_FS && MIEV && m
+	default m if ARCH_BLAIR

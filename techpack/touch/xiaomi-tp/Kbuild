@@ -1,0 +1,4 @@
+obj-m += xiaomi_tp.o
+xiaomi_tp-y := spring_abi_checks.o xiaomi_touch_core.o xiaomi_touch_device.o xiaomi_touch_evdev.o xiaomi_touch_knock_data.o xiaomi_touch_mode.o xiaomi_touch_operations.o xiaomi_touch_proc.o xiaomi_touch_sys.o
+ccflags-y += -I$(srctree)/drivers/thermal -I$(srctree)/drivers/android -I$(srctree)/kernel/sched
+ccflags-y += -DCONFIG_MIEV=1

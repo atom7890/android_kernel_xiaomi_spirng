@@ -1,0 +1,4 @@
+obj-$(CONFIG_SPRING_NOVATEK) += novatek/
+obj-$(CONFIG_SPRING_FOCALTECH) += focaltech/
+obj-$(CONFIG_SPRING_LCT_TOUCH) += lct-tp/
+obj-$(CONFIG_SPRING_XIAOMI_TOUCH) += xiaomi-tp/

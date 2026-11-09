@@ -1,0 +1,231 @@
+[
+  {
+    "name": "init_lct_tp_selftest",
+    "return": "int",
+    "parameters": [
+      [
+        "callback",
+        "tp_selftest_callback_t=int (unsigned char) *"
+      ]
+    ]
+  },
+  {
+    "name": "uninit_lct_tp_selftest",
+    "return": "void",
+    "parameters": []
+  },
+  {
+    "name": "set_lct_tp_info_callback",
+    "return": "void",
+    "parameters": [
+      [
+        "pfun",
+        "int (const char *) *"
+      ]
+    ]
+  },
+  {
+    "name": "set_lct_tp_lockdown_info_callback",
+    "return": "void",
+    "parameters": [
+      [
+        "pfun",
+        "int () *"
+      ]
+    ]
+  },
+  {
+    "name": "update_lct_tp_info",
+    "return": "void",
+    "parameters": [
+      [
+        "tp_info_buf",
+        "char *"
+      ]
+    ]
+  },
+  {
+    "name": "update_lct_tp_lockdown_info",
+    "return": "void",
+    "parameters": [
+      [
+        "tp_lockdown_info_buf",
+        "char *"
+      ]
+    ]
+  },
+  {
+    "name": "init_lct_tp_info",
+    "return": "int",
+    "parameters": [
+      [
+        "tp_info_buf",
+        "char *"
+      ]
+    ]
+  },
+  {
+    "name": "init_lct_tp_lockdown_info",
+    "return": "int",
+    "parameters": []
+  },
+  {
+    "name": "uninit_lct_tp_info",
+    "return": "void",
+    "parameters": []
+  },
+  {
+    "name": "uninit_lct_tp_lockdown_info",
+    "return": "void",
+    "parameters": []
+  },
+  {
+    "name": "init_lct_tp_work",
+    "return": "int",
+    "parameters": [
+      [
+        "callback",
+        "tp_work_cb_t=int (bool=_Bool) *"
+      ]
+    ]
+  },
+  {
+    "name": "uninit_lct_tp_work",
+    "return": "void",
+    "parameters": []
+  },
+  {
+    "name": "set_lct_tp_work_status",
+    "return": "void",
+    "parameters": [
+      [
+        "en",
+        "bool=_Bool"
+      ]
+    ]
+  },
+  {
+    "name": "get_lct_tp_work_status",
+    "return": "bool=_Bool",
+    "parameters": []
+  },
+  {
+    "name": "init_lct_tp_proximity_data",
+    "return": "int",
+    "parameters": []
+  },
+  {
+    "name": "uninit_lct_tp_proximity_data",
+    "return": "void",
+    "parameters": []
+  },
+  {
+    "name": "get_lct_tp_proximity_data_data",
+    "return": "bool=_Bool",
+    "parameters": []
+  },
+  {
+    "name": "set_lct_tp_proximity_data",
+    "return": "void",
+    "parameters": [
+      [
+        "value",
+        "int"
+      ]
+    ]
+  },
+  {
+    "name": "init_lct_tp_proximity_switch",
+    "return": "int",
+    "parameters": [
+      [
+        "callback",
+        "tp_proximity_switch_cb_t=int (bool=_Bool) *"
+      ]
+    ]
+  },
+  {
+    "name": "uninit_lct_tp_proximity_switch",
+    "return": "void",
+    "parameters": []
+  },
+  {
+    "name": "set_lct_tp_proximity_switch_status",
+    "return": "void",
+    "parameters": [
+      [
+        "en",
+        "bool=_Bool"
+      ]
+    ]
+  },
+  {
+    "name": "get_lct_tp_proximity_switch_status",
+    "return": "bool=_Bool",
+    "parameters": []
+  },
+  {
+    "name": "init_lct_tp_grip_area",
+    "return": "int",
+    "parameters": [
+      [
+        "set_fun",
+        "set_screen_angle_callback=int (int) *"
+      ],
+      [
+        "get_fun",
+        "get_screen_angle_callback=int () *"
+      ]
+    ]
+  },
+  {
+    "name": "uninit_lct_tp_grip_area",
+    "return": "void",
+    "parameters": []
+  },
+  {
+    "name": "set_tp_grip_area_angle",
+    "return": "int",
+    "parameters": [
+      [
+        "screen_angle",
+        "int"
+      ]
+    ]
+  },
+  {
+    "name": "get_tp_grip_area_angle",
+    "return": "int",
+    "parameters": []
+  },
+  {
+    "name": "init_lct_tp_gesture",
+    "return": "int",
+    "parameters": [
+      [
+        "callback",
+        "tp_gesture_cb_t=int (bool=_Bool) *"
+      ]
+    ]
+  },
+  {
+    "name": "uninit_lct_tp_gesture",
+    "return": "void",
+    "parameters": []
+  },
+  {
+    "name": "set_lct_tp_gesture_status",
+    "return": "void",
+    "parameters": [
+      [
+        "en",
+        "bool=_Bool"
+      ]
+    ]
+  },
+  {
+    "name": "get_lct_tp_gesture_status",
+    "return": "bool=_Bool",
+    "parameters": []
+  }
+]
