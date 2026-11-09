@@ -1,0 +1,114 @@
+/* Xiaomi Spring board audio: WCD937x with Foursemi/SIA speaker path. */
+
+&soc {
+	frsm_amp_mngr: frsm_amp_mngr {
+		compatible = "audio,spkr-amp-mngr";
+		audio,amp-ndev = <1>;
+		status = "ok";
+	};
+
+	frsm_amp {
+		compatible = "foursemi,frsm-amp";
+		frsm,amp-ndev = <1>;
+		frsm,class-enable;
+		status = "ok";
+	};
+
+	si_pa_L: si_pa_L {
+		compatible = "si,sia81xx";
+		si,si_pa_type = "sia8150";
+		si,si_pa_disable_pin = <1>;
+		channel_num = <0>;
+	};
+};
+
+&qupv3_se8_i2c {
+	spk_amp1: fs15xx@36 {
+		compatible = "foursemi,fs1589";
+		reg = <0x36>;
+		spkr-id = <1>;
+		fwm-name = "frsm-spk1.bin";
+		status = "ok";
+	};
+
+	sipa_i2c_L: sipa_i2c_L@2a {
+		compatible = "si,sia81xx-i2c";
+		reg = <0x2a>;
+		si,sipa-dev = <&si_pa_L>;
+	};
+};
+
+&holi_snd {
+	qcom,model = "blair-qrd-snd-card";
+	qcom,msm-mi2s-master = <1>, <1>, <1>, <1>;
+	qcom,wcn-btfm = <1>;
+	qcom,va-bolero-codec = <1>;
+	qcom,rxtx-bolero-codec = <1>;
+	qcom,audio-routing =
+		"AMIC1", "Analog Mic1",
+		"AMIC1", "MIC BIAS1",
+		"AMIC2", "Analog Mic2",
+		"AMIC2", "MIC BIAS2",
+		"AMIC3", "Analog Mic3",
+		"AMIC3", "MIC BIAS3",
+		"TX DMIC0", "Digital Mic0",
+		"TX DMIC0", "MIC BIAS1",
+		"TX DMIC1", "Digital Mic1",
+		"TX DMIC1", "MIC BIAS1",
+		"TX DMIC2", "Digital Mic2",
+		"TX DMIC2", "MIC BIAS3",
+		"TX DMIC3", "Digital Mic3",
+		"TX DMIC3", "MIC BIAS3",
+		"IN1_HPHL", "HPHL_OUT",
+		"IN2_HPHR", "HPHR_OUT",
+		"IN3_AUX", "AUX_OUT",
+		"RX_TX DEC0_INP", "TX DEC0 MUX",
+		"RX_TX DEC1_INP", "TX DEC1 MUX",
+		"RX_TX DEC2_INP", "TX DEC2 MUX",
+		"RX_TX DEC3_INP", "TX DEC3 MUX",
+		"TX SWR_INPUT", "WCD_TX_OUTPUT",
+		"VA SWR_INPUT", "VA_SWR_CLK",
+		"VA SWR_INPUT", "WCD_TX_OUTPUT",
+		"VA_AIF1 CAP", "VA_SWR_CLK",
+		"VA_AIF2 CAP", "VA_SWR_CLK",
+		"VA_AIF3 CAP", "VA_SWR_CLK",
+		"VA DMIC0", "Digital Mic0",
+		"VA DMIC1", "Digital Mic1",
+		"VA DMIC2", "Digital Mic2",
+		"VA DMIC3", "Digital Mic3",
+		"VA DMIC4", "Digital Mic4",
+		"VA DMIC5", "Digital Mic5",
+		"VA DMIC0", "VA MIC BIAS1",
+		"VA DMIC1", "VA MIC BIAS1",
+		"VA DMIC2", "VA MIC BIAS3",
+		"VA DMIC3", "VA MIC BIAS3";
+	qcom,msm-mbhc-usbc-audio-supported = <1>;
+	qcom,msm-mbhc-hphl-swh = <0>;
+	qcom,msm-mbhc-gnd-swh = <0>;
+	fsa4480-i2c-handle = <&audio_switch>;
+	asoc-codec = <&stub_codec>, <&bolero_cdc>, <&wcd937x_codec>;
+	asoc-codec-names = "msm-stub-codec.1", "bolero-codec", "wcd937x_codec";
+	qcom,wsa-max-devs = <0>;
+	qcom,wsa-aux-dev-prefix = "SpkrMono";
+	qcom,msm_audio_ssr_devs = <&audio_gpr>, <&lpi_tlmm>, <&bolero_cdc>;
+	si,sia81xx-max-num = <1>;
+	si,sia81xx-aux-devs = <&si_pa_L>;
+	si,sia81xx-aux-devs-prefix = "SpkrMonoL";
+};
+
+/* Match the working Spring microphone and unused WSA speaker configuration. */
+&wcd937x_codec {
+	qcom,cdc-micbias1-mv = <2700>;
+	qcom,cdc-micbias2-mv = <2700>;
+	qcom,cdc-micbias3-mv = <2700>;
+};
+
+&wsa881x_i2c_e { status = "disabled"; };
+&wsa881x_i2c_44 { status = "disabled"; };
+&wsa881x_analog_clk_gpio { status = "disabled"; };
+&wsa881x_analog_clk { status = "disabled"; };
+&wsa881x_analog_reset_gpio {
+	pinctrl-0 = <&spkr_1_sd_n_active>;
+	pinctrl-1 = <&spkr_1_sd_n_sleep>;
+	status = "disabled";
+};

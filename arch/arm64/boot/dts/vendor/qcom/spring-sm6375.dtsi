@@ -1,0 +1,51 @@
+/* And public attribution of longcheer platforms */
+#include "longcheer-sm6375-common.dtsi"
+#include "spring-pinctrl.dtsi"
+#include "spring-qupv3.dtsi"
+
+&sdhc_2 {
+	cd-gpios = <&tlmm 94 GPIO_ACTIVE_HIGH>;
+};
+
+/* IR Bringup */
+&qupv3_se7_spi {
+	status = "ok";
+	/* Add slave device config here */
+	ir_spi@1 {
+		compatible = "lc,ir-spi";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		reg = <1>; /* Chip select 0 */
+		spi-max-frequency = <1000000>;
+		spi-cpol;
+		status = "ok";
+	};
+};
+
+/* modem expand efs ram size to 8M */
+&soc {
+	qcom,rmtfs_sharedmem@0 {
+		compatible = "qcom,sharedmem-uio";
+		reg = <0x0 0x800000>;
+		reg-names = "rmtfs";
+		qcom,client-id = <0x00000001>;
+		/*Bein modify by lct for BUGO19-1002 OTA enter dump at 20250410*/
+		memory-region = <&rmtfs_mem>;
+		/*End modify by lct for BUGO19-1002 OTA enter dump at 20250410*/
+		qcom,vm-nav-path;
+	};
+
+	reboot_reason {
+		compatible = "qcom,reboot-reason";
+		nvmem-cells = <&restart_reason>;
+		nvmem-cell-names = "restart_reason";
+	};
+};
+&{/chosen} {
+	bootargs = "swiotlb=noforce kernel.panic_on_rcu_stall=1 rcupdate.rcu_expedited=1 fw_devlink.strict=1 service_locator.enable=1 rcu_nocbs=0-7 kpti=off irqaffinity=0-1 nosoftlockup cpufreq.default_governor=performance sysctl.kernel.sched_pelt_multiplier=4 no-steal-acc cgroup.memory=nokmem,nosocket printk.console_no_auto_verbose=1 kasan=off loop.max_part=7 can.stats_timer=0 ftrace_dump_on_oops ufshcd-core.use_mcq_mode=n firmware_class.path=/vendor/firmware_mnt/image,/odm/firmware pcie_ports=compat disable_dma32=on";
+};
+
+/* Working Spring USB OTG output current limit, in microamps. */
+&pm7250b_charger {
+	qcom,otg-cl-ua = <1500000>;
+};

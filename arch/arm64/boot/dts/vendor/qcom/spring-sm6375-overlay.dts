@@ -1,0 +1,48 @@
+/dts-v1/;
+/plugin/;
+
+/* Base hardware and board overrides are built into one overlay. */
+#include <dt-bindings/clock/qcom,gcc-blair.h>
+#include <dt-bindings/clock/qcom,gpucc-blair.h>
+#include <dt-bindings/clock/qcom,rpmcc.h>
+#include <dt-bindings/interconnect/qcom,blair.h>
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+#include <dt-bindings/regulator/qcom,rpmh-regulator-levels.h>
+#include <dt-bindings/regulator/qcom,rpm-smd-regulator.h>
+#include <dt-bindings/spmi/spmi.h>
+#include "audio/blair-audio.dtsi"
+#include "bt/blair-bt.dtsi"
+#include "graphics/gpu/blair-gpu.dtsi"
+#include "graphics/gpu/blair-gpu-pwrlevels.dtsi"
+#include "display/blair-sde.dtsi"
+#include "camera/blair-camera.dtsi"
+#include "spring-platform-restored.dtsi"
+#include "blair-qrd.dtsi"
+#include "display/spring-sde-display-qrd.dtsi"
+#include "camera/spring-camera-sensor-qrd.dtsi"
+#include "audio/blair-audio-overlay.dtsi"
+#include "audio/spring-audio.dtsi"
+#include "holi-qrd-pm7250b.dtsi"
+#include "spring-sm6375.dtsi"
+
+/ {
+	model = "Qualcomm Technologies, Inc. Spring QRD";
+	compatible = "qcom,blair-qrd", "qcom,blair", "qcom,qrd";
+	qcom,msm-id = <507 0x10000>, <578 0x10000>;
+	qcom,board-id = <0x2000B 0>;
+	qcom,pmic-id-size = <4>;
+	qcom,pmic-id = <0x2D 0x0 0x2E 0x0>;
+};
+
+&pm7250b_charger {
+	dpdm-supply = <&usb2_phy0>;
+};
+#include "fingerprint.dtsi"
+
+&soc {
+	/*add simtray status*/
+	simtray {
+		compatible = "xiaomi,simtray-status";
+		status-gpio = <&tlmm 94 0x00>;
+	};
+};
