@@ -1,0 +1,17 @@
+obj-y += power/ storage/ touch/ fingerprint/
+obj-$(CONFIG_SPRING_DISPLAY) += display/display-drivers/msm/
+obj-$(CONFIG_NXP_NFC_I2C) += nfc/nxp/opensource/driver/
+obj-$(CONFIG_SPRING_DSP) += dsp/dsp-kernel/
+obj-$(CONFIG_SPRING_AUDIO) += audio/audio-kernel/
+obj-$(CONFIG_MIEV) += include/miev/
+obj-$(CONFIG_SPRING_XIAOMI_SUPPORT) += xiaomi/
+obj-$(CONFIG_SPRING_MMRM) += multimedia/mmrm-driver/ xiaomi/mmrm-test/
+obj-$(CONFIG_SPRING_BT_FM) += bt/bt-kernel/
+obj-$(CONFIG_SPRING_DATA) += dataipa/dataipa/drivers/platform/msm/
+obj-$(CONFIG_SPRING_DATA) += datarmnet/datarmnet/core/ datarmnet-ext/datarmnet-ext/
+obj-$(CONFIG_SPRING_SECUREMSM) += securemsm/securemsm-kernel/
+obj-$(CONFIG_SPRING_MEDIA) += camera/camera-kernel/ graphics/graphics-kernel/
+obj-$(CONFIG_SPRING_MEDIA) += video/video-driver-blair/
+obj-$(CONFIG_SPRING_WLAN_PLATFORM) += wlan/wlan/platform/
+obj-$(CONFIG_SPRING_WLAN) += wlan/wlan/qcacld-3.0/
+obj-$(CONFIG_SPRING_TMS) += nfc/pn560/ nfc/tmsdrv/

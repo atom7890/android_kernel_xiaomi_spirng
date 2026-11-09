@@ -18,6 +18,7 @@ source "mm/Kconfig"
 source "net/Kconfig"
 
 source "drivers/Kconfig"
+source "techpack/Kconfig"
 
 source "fs/Kconfig"
 

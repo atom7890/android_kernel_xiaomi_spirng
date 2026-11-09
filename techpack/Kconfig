@@ -1,0 +1,78 @@
+menu "Xiaomi Spring techpack drivers"
+
+source "techpack/power/Kconfig"
+source "techpack/storage/Kconfig"
+source "techpack/touch/Kconfig"
+source "techpack/fingerprint/Kconfig"
+source "techpack/nfc/nxp/opensource/driver/Kconfig"
+
+config SPRING_DSP
+	tristate "Spring Qualcomm DSP drivers"
+	depends on ARCH_BLAIR && RPMSG && m
+	default m
+
+config SPRING_AUDIO
+	tristate "Spring Qualcomm audio drivers"
+	depends on ARCH_BLAIR && SND_SOC && m
+	default m
+
+config MIEV
+	tristate "Xiaomi MiSight event logging"
+	depends on m
+	default m if SPRING_AUDIO
+
+config SPRING_XIAOMI_SUPPORT
+	tristate "Spring Xiaomi platform support drivers"
+	depends on ARCH_BLAIR && CPU_FREQ && PROC_FS && m
+	default m
+
+config SPRING_DISPLAY
+	tristate "Spring Qualcomm display driver"
+	depends on ARCH_BLAIR && DRM && !DRM_MSM
+	depends on m
+	default m
+	help
+	  Build the downstream Qualcomm display module used by Xiaomi Spring.
+
+config SPRING_MMRM
+	tristate "Spring Qualcomm multimedia resource manager"
+	depends on ARCH_BLAIR && COMMON_CLK && m
+	default m
+
+config SPRING_BT_FM
+	tristate "Spring Qualcomm Bluetooth and FM drivers"
+	depends on ARCH_BLAIR && RFKILL && SLIMBUS && SND_SOC && I2C && VIDEO_DEV
+	depends on !MSM_BT_POWER && m
+	default m
+
+config SPRING_DATA
+	tristate "Spring Qualcomm IPA and RMNET drivers"
+	depends on ARCH_BLAIR && NET && QCOM_QMI_HELPERS && !RMNET && m
+	default m
+
+config SPRING_SECUREMSM
+	tristate "Spring Qualcomm secure services"
+	depends on ARCH_BLAIR && QCOM_SCM && m
+	default m
+
+config SPRING_MEDIA
+	tristate "Spring Qualcomm camera, graphics and video drivers"
+	depends on ARCH_BLAIR && VIDEO_DEV && DMA_SHARED_BUFFER && SPRING_SECUREMSM && m
+	default m
+
+config SPRING_WLAN_PLATFORM
+	tristate "Spring Qualcomm WLAN platform drivers"
+	depends on ARCH_BLAIR && WLAN && QCOM_QMI_HELPERS && m
+	default m
+
+config SPRING_WLAN
+	tristate "Spring Qualcomm Adrastea WLAN driver"
+	depends on SPRING_WLAN_PLATFORM && SPRING_DATA && CFG80211 && m
+	default m
+
+config SPRING_TMS
+	tristate "Spring PN560 and TMS NFC and secure element"
+	depends on ARCH_BLAIR && I2C && SPI && m
+	default m
+
+endmenu
