@@ -215,7 +215,6 @@ struct mi2s_conf {
 };
 
 static bool is_initial_boot;
-static bool codec_reg_done;
 static struct snd_soc_card snd_soc_card_holi_msm;
 static int dmic_0_1_gpio_cnt;
 static int dmic_2_3_gpio_cnt;
@@ -1478,7 +1477,6 @@ static int msm_rx_tx_codec_init(struct snd_soc_pcm_runtime *rtd)
 	snd_soc_dapm_ignore_suspend(dapm, "AMIC4");
 	snd_soc_dapm_sync(dapm);
 
-        codec_reg_done = true;
         msm_common_dai_link_init(rtd);
 mbhc_cfg_cal:
 
@@ -1724,13 +1722,9 @@ static int msm_asoc_machine_probe(struct platform_device *pdev)
 	#endif /*CONFIG_SND_SOC_SIPA*/
 
 	ret = devm_snd_soc_register_card(&pdev->dev, card);
-	if (ret == -EPROBE_DEFER) {
-		if (codec_reg_done)
-			ret = -EINVAL;
-		goto err;
-	} else if (ret) {
-		dev_err(&pdev->dev, "%s: snd_soc_register_card failed (%d)\n",
-			__func__, ret);
+	if (ret) {
+		dev_err_probe(&pdev->dev, ret, "failed to register sound card %s\n",
+			      card->name);
 		goto err;
 	}
 	dev_info(&pdev->dev, "%s: Sound card %s registered\n",
@@ -1858,7 +1852,7 @@ err:
 	soc_aux_deinit_only_sia81xx(pdev, card);
 	#endif /*CONFIG_SND_SOC_SIPA*/
 	devm_kfree(&pdev->dev, pdata);
-	printk("<%s><%d>: X, failed.\n", __func__, __LINE__);
+	dev_dbg(&pdev->dev, "%s failed: %d\n", __func__, ret);
 	return ret;
 }
 
