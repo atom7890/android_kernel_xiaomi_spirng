@@ -293,49 +293,25 @@ static int qg_get_battery_capacity_raw(struct qpnp_qg *chip, int *raw_soc)
 int qg_get_battery_voltage(struct qpnp_qg *chip, int *vbat_uv)
 {
 	union power_supply_propval val = {0,};
-	int rc = 0;
+	int rc;
 
 	if (!is_gague_available(chip)) {
 		chip->fg_psy = power_supply_get_by_name("bq28z610");
 		if (!chip->fg_psy) {
-			pr_err("%s: get gauge psy failed \n", __func__);
+			pr_err("%s: get gauge psy failed\n", __func__);
 			*vbat_uv = 3700000;
 			return 0;
 		}
 	}
 
-#if 0
 	rc = power_supply_get_property(chip->fg_psy,
 				       POWER_SUPPLY_PROP_VOLTAGE_NOW, &val);
 	if (rc < 0) {
-		pr_err("Failed to get capacity, rc=%d\n", rc);
+		pr_err("Failed to get battery voltage, rc=%d\n", rc);
 		return rc;
-	}
-#endif
-	if (!chip->usb_psy) {
-		chip->usb_psy = power_supply_get_by_name("usb");
-	}
-
-	if (IS_ERR_OR_NULL(chip->batt_psy)) {
-		rc = power_supply_get_property(chip->fg_psy,
-				       POWER_SUPPLY_PROP_VOLTAGE_NOW, &val);
-		if (rc < 0) {
-			pr_err("Failed to get capacity, rc=%d\n", rc);
-			return rc;
-		}
-	} else {
-		rc = power_supply_get_property(chip->usb_psy,
-				       POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN, &val);
-		if (rc < 0) {
-			pr_err("Failed to get capacity, rc=%d\n", rc);
-			return rc;
-		} else {
-			val.intval = val.intval/100;
-		}
 	}
 
 	*vbat_uv = val.intval;
-
 	return 0;
 }
 
