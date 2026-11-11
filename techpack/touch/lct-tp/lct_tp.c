@@ -133,7 +133,7 @@ static ssize_t lct_proc_read(struct file *file, char __user *buf,
   return -EINVAL;
  if (!count)
   return 0;
- /* Retained proc readers return EOF once a positive offset is present. */
+ /* Each record ends at EOF; readers rewind before polling again. */
  if (*pos)
   return 0;
  mutex_lock(&node->operation_lock);
@@ -293,6 +293,7 @@ out:
 }
 
 static const struct proc_ops lct_proc_ops = {
+ .proc_lseek = default_llseek,
  .proc_read = lct_proc_read,
  .proc_write = lct_proc_write,
 };
