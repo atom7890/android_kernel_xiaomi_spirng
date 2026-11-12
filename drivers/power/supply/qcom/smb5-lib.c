@@ -2064,7 +2064,7 @@ int smblib_get_prop_batt_status(struct smb_charger *chg,
 				union power_supply_propval *val)
 {
 	union power_supply_propval pval = {0, };
-	bool usb_online, dc_online;
+	bool usb_online, dc_online, topping_off = false;
 	u8 stat;
 	int rc, suspend = 0, input_present = 0;
 
@@ -2195,6 +2195,14 @@ int smblib_get_prop_batt_status(struct smb_charger *chg,
 		fallthrough;
 	case INHIBIT_CHARGE:
 		val->intval = POWER_SUPPLY_STATUS_FULL;
+		/* Spring may top off after PMIC termination; SOC is not forced. */
+		rc = smblib_get_prop_from_bms(chg, SMB5_QG_CAPACITY,
+					&pval.intval);
+		if (!rc && usb_online && pval.intval >= 0 && pval.intval < 100 &&
+		    !get_effective_result(chg->chg_disable_votable)) {
+			val->intval = POWER_SUPPLY_STATUS_CHARGING;
+			topping_off = true;
+		}
 		break;
 	case DISABLE_CHARGE:
 		fallthrough;
@@ -2221,7 +2229,7 @@ int smblib_get_prop_batt_status(struct smb_charger *chg,
 		return 0;
 	}
 
-	if (val->intval != POWER_SUPPLY_STATUS_CHARGING)
+	if (topping_off || val->intval != POWER_SUPPLY_STATUS_CHARGING)
 		return 0;
 
 	if (!usb_online && dc_online

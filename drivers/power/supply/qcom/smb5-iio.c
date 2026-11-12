@@ -15,6 +15,10 @@
 
 #define MIN_THERMAL_VOTE_UA	500000
 
+/* Spring charge-pump handoff: keep the main input path at 100 mA. */
+#define MAIN_ICL_MIN_VOTER "MAIN_ICL_MIN_VOTER"
+#define MAIN_ICL_MIN_UA 100000
+
 int smb5_iio_get_prop(struct smb_charger *chg, int channel, int *val)
 {
 	union power_supply_propval pval = {0, };
@@ -25,6 +29,10 @@ int smb5_iio_get_prop(struct smb_charger *chg, int channel, int *val)
 	*val = 0;
 
 	switch (channel) {
+	case PSY_IIO_SW_CHARGING_ENABLED:
+		*val = !(get_client_vote(chg->usb_icl_votable,
+				MAIN_ICL_MIN_VOTER) == MAIN_ICL_MIN_UA);
+		break;
 	/* USB */
 	case PSY_IIO_VOLTAGE_MAX_LIMIT:
 		if (chg->usbin_forced_max_uv) {
@@ -307,6 +315,10 @@ int smb5_iio_set_prop(struct smb_charger *chg, int channel, int val)
 	int icl, rc = 0, offset_ua = 0;
 
 	switch (channel) {
+	case PSY_IIO_SW_CHARGING_ENABLED:
+		rc = vote(chg->usb_icl_votable, MAIN_ICL_MIN_VOTER,
+				!val, val ? 0 : MAIN_ICL_MIN_UA);
+		break;
 	/* USB */
 	case PSY_IIO_PD_CURRENT_MAX:
 		rc = smblib_set_prop_pd_current_max(chg, val);

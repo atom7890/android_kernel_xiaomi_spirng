@@ -1304,7 +1304,7 @@ static int smb5_batt_get_prop(struct power_supply *psy,
 						SMB5_QG_TEMP, &pval->intval);
 		break;
 	case POWER_SUPPLY_PROP_TECHNOLOGY:
-		pval->intval = POWER_SUPPLY_TECHNOLOGY_LION;
+		pval->intval = POWER_SUPPLY_TECHNOLOGY_LIPO;
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_COUNTER:
 		rc = smblib_get_prop_from_bms(chg,

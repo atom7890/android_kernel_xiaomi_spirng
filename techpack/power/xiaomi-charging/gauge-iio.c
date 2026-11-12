@@ -2054,7 +2054,7 @@ static void qg_status_change_work(struct work_struct *work)
 	}
 
 	if(chip->charge_type == POWER_SUPPLY_TYPE_USB_PD
-		&& chip->charge_status == POWER_SUPPLY_STATUS_FULL
+		&& chip->charge_done
 		&& is_between(201, 451, batt_temp)) {
 		rc = handle_power_replenish(chip);
 	}
