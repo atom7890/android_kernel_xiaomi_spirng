@@ -85,6 +85,7 @@ struct usbpd_pm {
 	int request_vbus;
 	int request_ibus;
 	int select_fix_pdo;
+	bool plain_pd_pdo_done;
 
 	bool jeita_triggered;
 	bool is_temp_out_fc2_range;

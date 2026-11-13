@@ -1223,6 +1223,72 @@ static int cycle_count_reduce_voltage(struct usbpd_pm *pdpm)
 	return 0;
 }
 
+/*
+ * Plain USB-PD adapters (fixed PDOs only, no PPS) never reach the charge pump
+ * state machine, so the sink would stay on the 5V default PDO.  Pick the
+ * highest fixed PDO up to 9V that can supply at least 2A.
+ */
+#ifndef PD_SRC_PDO_TYPE_FIXED
+#define PD_SRC_PDO_TYPE_FIXED		0
+#endif
+#define PLAIN_PD_MAX_MV		9000
+#define PLAIN_PD_MIN_MA		2000
+#define PLAIN_PD_RETRIES	10
+
+static void usbpd_pm_select_plain_pd_pdo(struct usbpd_pm *pdpm)
+{
+	struct usbpd_pdo pdo[PDO_MAX_NUM];
+	int i, best = 0, best_mw = 0, mw, ret = -EBUSY;
+
+	if (pdpm->plain_pd_pdo_done || IS_ERR_OR_NULL(pdpm->pd))
+		return;
+
+	if (!IS_ERR_OR_NULL(pdpm->pdo_5v_votable) &&
+	    get_effective_result(pdpm->pdo_5v_votable) > 0)
+		return;
+
+	for (i = 0; i < PLAIN_PD_RETRIES; i++) {
+		ret = usbpd_fetch_pdo(pdpm->pd, pdo);
+		if (!ret)
+			break;
+		msleep(200);
+	}
+	if (ret) {
+		pr_err("plain pd: fetch pdo failed %d\n", ret);
+		return;
+	}
+
+	for (i = 0; i < PDO_MAX_NUM; i++) {
+		if (!pdo[i].pos)
+			break;
+		if (pdo[i].type != PD_SRC_PDO_TYPE_FIXED ||
+		    pdo[i].max_volt_mv > PLAIN_PD_MAX_MV ||
+		    pdo[i].curr_ma < PLAIN_PD_MIN_MA)
+			continue;
+		mw = pdo[i].max_volt_mv * pdo[i].curr_ma / 1000;
+		if (mw > best_mw) {
+			best_mw = mw;
+			best = pdo[i].pos;
+		}
+	}
+
+	if (!best || best == 1) {
+		pdpm->plain_pd_pdo_done = true;
+		return;
+	}
+
+	for (i = 0; i < PLAIN_PD_RETRIES; i++) {
+		ret = usbpd_select_pdo(pdpm->pd, best, 0, 0);
+		if (ret != -EBUSY)
+			break;
+		msleep(300);
+	}
+
+	pr_info("plain pd: select fixed pdo %d (%d mW) ret=%d\n", best, best_mw, ret);
+	if (!ret)
+		pdpm->plain_pd_pdo_done = true;
+}
+
 static void usbpd_pm_psy_change_work(struct work_struct *work)
 {
 	struct bq_fg_chip *bq = NULL;
@@ -1263,6 +1329,11 @@ static void usbpd_pm_psy_change_work(struct work_struct *work)
 	} else {
 		pr_err("get fg psy failed\n");
         }
+
+	if (pd_active == QTI_POWER_SUPPLY_PD_ACTIVE)
+		usbpd_pm_select_plain_pd_pdo(pdpm);
+	else if (pd_active == QTI_POWER_SUPPLY_PD_INACTIVE)
+		pdpm->plain_pd_pdo_done = false;
 
 	if (!pdpm->pd_active && (pd_active == QTI_POWER_SUPPLY_PD_PPS_ACTIVE)) {
 		usbpd_pm_pd_contact(pdpm, true);
