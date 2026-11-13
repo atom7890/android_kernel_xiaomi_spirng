@@ -1962,6 +1962,39 @@ last_temp:
 
 }
 
+/*
+ * handle_recharge_eea() only runs in EU mode, but replenish_work_func() also
+ * casts the EEA_CHARGE_FULL disable vote on CHG_DISABLE when the top-off
+ * finishes.  Outside EU mode nothing releases it, so charging stays disabled
+ * (for example at 98%) until reboot, even after the adapter is replugged.
+ * Release it once the adapter is gone or the level fell below the recharge
+ * threshold.
+ */
+static void release_eea_full_vote_non_eu(struct qpnp_qg *chip)
+{
+	int uisoc = 100;
+
+	if (IS_ERR_OR_NULL(chip->chg_dis_votable) ||
+	    delayed_work_pending(&chip->replenish_work))
+		return;
+
+	if (get_client_vote(chip->chg_dis_votable, EEA_CHARGE_FULL) <= 0)
+		return;
+
+	if (chip->charge_status != POWER_SUPPLY_STATUS_DISCHARGING &&
+	    chip->charge_type != POWER_SUPPLY_TYPE_UNKNOWN) {
+		if (qg_get_battery_capacity(chip, &uisoc) < 0 ||
+		    uisoc >= EEA_RECHARGE_SOC)
+			return;
+	}
+
+	pr_info("%s: release EEA_CHARGE_FULL, status=%d type=%d uisoc=%d\n",
+		__func__, chip->charge_status, chip->charge_type, uisoc);
+	input_current_limit_eea(chip, false);
+	charge_enable_eea(chip, true);
+	chip->prp_is_enable = false;
+}
+
 static void qg_status_change_work(struct work_struct *work)
 {
 	struct qpnp_qg *chip =
@@ -2051,6 +2084,8 @@ static void qg_status_change_work(struct work_struct *work)
 
 	if(chip->is_eu_mode){
 		rc = handle_recharge_eea(chip);
+	} else {
+		release_eea_full_vote_non_eu(chip);
 	}
 
 	if(chip->charge_type == POWER_SUPPLY_TYPE_USB_PD
