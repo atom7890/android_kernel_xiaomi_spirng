@@ -1594,30 +1594,44 @@ static int handle_recharge_eea(struct qpnp_qg *chip)
 #define CHARGE_FULL_CURR_BUFFER  	50000
 #define CHARGE_FULL_VOLT_BUFFER  	20000
 #define XM81_SWD		3
+/* Consecutive samples meeting the replenish-done condition; reset per session. */
+static int replenish_full_cnt;
+
 static bool is_replenish_done(struct qpnp_qg *chip)
 {
 	int iterm;
 	int batt_volt, batt_curr;
-	static int full_cnt;
 	int rc = 0;
 	//union power_supply_propval val;
+
+	/*
+	 * rp_fv is only configured by set_fv_fcc_cofig_for_replenish() on the
+	 * second work iteration.  Until then it is 0 (or stale from an earlier
+	 * session) and the voltage test below is meaningless, which made the
+	 * replenish finish instantly at the start.
+	 */
+	if (!chip->rp_fv) {
+		replenish_full_cnt = 0;
+		return false;
+	}
 
 	iterm = chip->batt_id == XM81_SWD ? 550000 : 480000;   //uA
 	rc = qg_get_battery_voltage(chip, &batt_volt);
 	rc |= qg_get_battery_current(chip, &batt_curr);
 	if (rc < 0){
 		pr_err("failed to get battery info, rc = %d\n", rc);
-		return rc;
+		/* A read error must not look like "done" (rc < 0 is truthy as bool). */
+		return false;
 	}
 
 	if((batt_volt >= chip->rp_fv + CHARGE_FULL_VOLT_BUFFER) && (batt_curr <= iterm + CHARGE_FULL_CURR_BUFFER)){
-		full_cnt ++;
+		replenish_full_cnt ++;
 	}else{
-		full_cnt = 0;
+		replenish_full_cnt = 0;
 	}
 	pr_info("%s: eff_fv:%d ~ %d, iterm:%d ~ %d, batt_volt:%d, batt_curr:%d, full_cnt:%d \n", __func__,
-		chip->rp_fv, CHARGE_FULL_VOLT_BUFFER, iterm, CHARGE_FULL_CURR_BUFFER, batt_volt, batt_curr, full_cnt);
-	if(full_cnt > CHARGE_FULL_COUNT){
+		chip->rp_fv, CHARGE_FULL_VOLT_BUFFER, iterm, CHARGE_FULL_CURR_BUFFER, batt_volt, batt_curr, replenish_full_cnt);
+	if(replenish_full_cnt > CHARGE_FULL_COUNT){
 		return true;
 	}
 
@@ -1699,14 +1713,18 @@ static void replenish_work_func(struct work_struct *work)
 				struct qpnp_qg,
 				replenish_work.work);
 
+	bool rp_done;
+
 	chip->prp_is_enable = true;
-	pr_info("%s: replenish_en:%d, work_count:%d, replenish_done:%d \n", __func__, chip->prp_is_enable, rp_work_count, is_replenish_done(chip));
+	/* Evaluate once per iteration: each call advances the done counter. */
+	rp_done = is_replenish_done(chip);
+	pr_info("%s: replenish_en:%d, work_count:%d, replenish_done:%d \n", __func__, chip->prp_is_enable, rp_work_count, rp_done);
 	if(rp_work_count == 1){
 		vote(chip->chg_dis_votable, JEITA_FCC_TAPER_VOTER, false, 0);
 		charge_enable_eea(chip, true);
 		set_fv_fcc_cofig_for_replenish(chip);
 		set_charge_status_eea(chip, POWER_SUPPLY_STATUS_CHARGING);
-	}else if(is_replenish_done(chip)){
+	}else if(rp_done){
 		pr_err("power replenish done, reset replenish status\n");
 		set_charge_status_eea(chip, POWER_SUPPLY_STATUS_FULL);
 		charge_enable_eea(chip, false);
@@ -1728,6 +1746,8 @@ static void replenish_work_func(struct work_struct *work)
 
 reset:
 	rp_work_count = 0;
+	replenish_full_cnt = 0;
+	chip->rp_fv = 0;
 	cancel_delayed_work(&chip->replenish_work);
 	vote(chip->icl_votable, POWER_REPLENISH_VOTER, false, 0);
 	vote(chip->fv_votable, POWER_REPLENISH_VOTER, false, 0);
