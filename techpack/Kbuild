@@ -12,4 +12,4 @@ obj-$(CONFIG_SPRING_SECUREMSM) += securemsm/
 obj-$(CONFIG_SPRING_MEDIA) += camera/ graphics/
 obj-$(CONFIG_SPRING_MEDIA) += video/
 obj-y += wlan/
-obj-$(CONFIG_SPRING_TMS) += nfc/pn560/ nfc/tmsdrv/
+obj-$(CONFIG_SPRING_TMS) += nfc/

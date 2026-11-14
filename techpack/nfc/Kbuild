@@ -1,0 +1,1 @@
+obj-$(CONFIG_SPRING_TMS) += pn560/ tmsdrv/
