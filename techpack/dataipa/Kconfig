@@ -1,0 +1,5 @@
+# SPDX-License-Identifier: GPL-2.0-only
+config SPRING_DATA
+	tristate "Spring Qualcomm IPA and RMNET drivers"
+	depends on ARCH_BLAIR && NET && QCOM_QMI_HELPERS && !RMNET && m
+	default m

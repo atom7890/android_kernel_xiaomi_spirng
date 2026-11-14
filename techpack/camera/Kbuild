@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
-CAMERA_KERNEL_ROOT ?= $(srctree)/techpack/camera/camera-kernel
+CAMERA_KERNEL_ROOT ?= $(srctree)/techpack/camera
 KERNEL_ROOT ?= $(srctree)
 ifeq ($(KBUILD_EXTMOD),)
 ccflags-y += -I$(srctree)/techpack/securemsm/securemsm-kernel/include

@@ -1,0 +1,5 @@
+# SPDX-License-Identifier: GPL-2.0-only
+config SPRING_MMRM
+	tristate "Spring Qualcomm multimedia resource manager"
+	depends on ARCH_BLAIR && COMMON_CLK && m
+	default m

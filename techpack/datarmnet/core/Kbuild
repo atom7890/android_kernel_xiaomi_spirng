@@ -4,9 +4,9 @@ endif
 
 ifeq ($(KBUILD_EXTMOD),)
 ccflags-y += -I$(srctree)/$(src) -DRMNET_TRACE_INCLUDE_PATH=.
-ccflags-y += -I$(srctree)/techpack/dataipa/dataipa/drivers/platform/msm/include \
-	-I$(srctree)/techpack/dataipa/dataipa/drivers/platform/msm/include/uapi \
-	-I$(srctree)/techpack/datarmnet-ext/datarmnet-ext/mem
+ccflags-y += -I$(srctree)/techpack/dataipa/drivers/platform/msm/include \
+	-I$(srctree)/techpack/dataipa/drivers/platform/msm/include/uapi \
+	-I$(srctree)/techpack/datarmnet-ext/mem
 else
 ccflags-y += \
 	-I$(src)/../../dataipa/drivers/platform/msm/include \

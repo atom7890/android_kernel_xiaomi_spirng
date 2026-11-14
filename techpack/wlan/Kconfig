@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: GPL-2.0-only
+config SPRING_WLAN_PLATFORM
+	tristate "Spring Qualcomm WLAN platform drivers"
+	depends on ARCH_BLAIR && WLAN && QCOM_QMI_HELPERS && m
+	default m
+
+config SPRING_WLAN
+	tristate "Spring Qualcomm Adrastea WLAN driver"
+	depends on SPRING_WLAN_PLATFORM && SPRING_DATA && CFG80211 && m
+	default m

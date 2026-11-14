@@ -3,7 +3,7 @@
 KDIR := $(TOP)/kernel_platform/common
 
 ifeq ($(KBUILD_EXTMOD),)
-KGSL_PATH ?= $(srctree)/techpack/graphics/graphics-kernel
+KGSL_PATH ?= $(srctree)/techpack/graphics
 KERNEL_SRC ?= $(srctree)
 endif
 

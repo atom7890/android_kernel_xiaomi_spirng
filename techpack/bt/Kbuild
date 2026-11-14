@@ -1,5 +1,5 @@
 ifeq ($(KBUILD_EXTMOD),)
-export BT_ROOT := $(srctree)/techpack/bt/bt-kernel
+export BT_ROOT := $(srctree)/techpack/bt
 export CONFIG_MSM_BT_POWER := m
 export CONFIG_BTFM_SLIM := m
 export CONFIG_I2C_RTC6226_QCA := m

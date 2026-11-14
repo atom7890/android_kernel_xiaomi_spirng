@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: GPL-2.0-only
+config SPRING_XIAOMI_SUPPORT
+	tristate "Spring Xiaomi platform support drivers"
+	depends on ARCH_BLAIR && CPU_FREQ && PROC_FS && m
+	default m
+
+config MIEV
+	tristate "Xiaomi MiSight event logging"
+	depends on m
+	default m if SPRING_AUDIO

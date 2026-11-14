@@ -1,0 +1,5 @@
+# SPDX-License-Identifier: GPL-2.0-only
+config SPRING_MEDIA
+	tristate "Spring Qualcomm camera, graphics and video drivers"
+	depends on ARCH_BLAIR && VIDEO_DEV && DMA_SHARED_BUFFER && SPRING_SECUREMSM && m
+	default m

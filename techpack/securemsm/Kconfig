@@ -1,0 +1,5 @@
+# SPDX-License-Identifier: GPL-2.0-only
+config SPRING_SECUREMSM
+	tristate "Spring Qualcomm secure services"
+	depends on ARCH_BLAIR && QCOM_SCM && m
+	default m

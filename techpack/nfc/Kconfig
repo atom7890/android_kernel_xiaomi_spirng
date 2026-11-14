@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: GPL-2.0-only
+source "techpack/nfc/nxp/opensource/driver/Kconfig"
+
+config SPRING_TMS
+	tristate "Spring PN560 and TMS NFC and secure element"
+	depends on ARCH_BLAIR && I2C && SPI && m
+	default m

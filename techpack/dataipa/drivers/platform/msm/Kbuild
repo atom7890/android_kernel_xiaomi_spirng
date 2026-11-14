@@ -1,10 +1,10 @@
 # SPDX-License-Identifier: GPL-2.0-only
 ifeq ($(KBUILD_EXTMOD),)
-export DATAIPA_ROOT := $(srctree)/techpack/dataipa/dataipa
+export DATAIPA_ROOT := $(srctree)/techpack/dataipa
 export CONFIG_IPA3 := m
 subdir-ccflags-y += -DGSI_TRACE_INCLUDE_PATH=. -DIPA_TRACE_INCLUDE_PATH=. \
 	-DRNDIS_TRACE_INCLUDE_PATH=. -DNCM_TRACE_INCLUDE_PATH=.
-subdir-ccflags-y += -I$(srctree)/techpack/datarmnet-ext/datarmnet-ext/mem
+subdir-ccflags-y += -I$(srctree)/techpack/datarmnet-ext/mem
 endif
 
 DATAIPADRVTOP = $(srctree)/techpack/dataipa/drivers/platform/msm

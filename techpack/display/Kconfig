@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: GPL-2.0-only
+config SPRING_DISPLAY
+	tristate "Spring Qualcomm display driver"
+	depends on ARCH_BLAIR && DRM && !DRM_MSM
+	depends on m
+	default m
+	help
+	  Build the downstream Qualcomm display module used by Xiaomi Spring.

@@ -1,6 +1,6 @@
 ifeq ($(KBUILD_EXTMOD),)
 # Use the downstream Blair audio configuration for the integrated build.
-export AUDIO_ROOT := $(srctree)/techpack/audio/audio-kernel
+export AUDIO_ROOT := $(srctree)/techpack/audio
 export KERNEL_SRC := $(srctree)
 export MODNAME := audio_dlkm
 endif

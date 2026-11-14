@@ -1,9 +1,9 @@
 ifeq ($(KBUILD_EXTMOD),)
 MODNAME := qca_cld3_wlan
-WLAN_ROOT := $(srctree)/techpack/wlan/wlan/qcacld-3.0
+WLAN_ROOT := $(srctree)/techpack/wlan/qcacld-3.0
 WLAN_PROFILE := spring_gki_adrastea
-DATA_IPA_INC := $(srctree)/techpack/dataipa/dataipa/drivers/platform/msm/include
-DATA_IPA_CONFIG := $(srctree)/techpack/dataipa/dataipa/config
+DATA_IPA_INC := $(srctree)/techpack/dataipa/drivers/platform/msm/include
+DATA_IPA_CONFIG := $(srctree)/techpack/dataipa/config
 override CONFIG_QCA_CLD_WLAN := m
 # Preserve the boot-tested Adrastea build's WLAN feature selection.
 override CONFIG_IPA_OFFLOAD := n

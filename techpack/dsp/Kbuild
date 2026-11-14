@@ -19,7 +19,7 @@ KBUILD_CPPFLAGS += -DCONFIG_DSP_PINEAPPLE=1
 ccflags-y += -DCONFIG_DSP_PINEAPPLE=1
 endif
 
-DSP_ROOT ?= $(srctree)/techpack/dsp/dsp-kernel
+DSP_ROOT ?= $(srctree)/techpack/dsp
 ccflags-y += -I$(DSP_ROOT)/dsp -DDSP_TRACE_INCLUDE_PATH=.
 LINUXINCLUDE += -I$(DSP_ROOT)/include/linux
 LINUXINCLUDE += -I$(DSP_ROOT)/include/uapi

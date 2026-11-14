@@ -1,0 +1,5 @@
+# SPDX-License-Identifier: GPL-2.0-only
+config SPRING_AUDIO
+	tristate "Spring Qualcomm audio drivers"
+	depends on ARCH_BLAIR && SND_SOC && m
+	default m

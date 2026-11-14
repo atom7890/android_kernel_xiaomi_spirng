@@ -1,0 +1,6 @@
+# SPDX-License-Identifier: GPL-2.0-only
+config SPRING_BT_FM
+	tristate "Spring Qualcomm Bluetooth and FM drivers"
+	depends on ARCH_BLAIR && RFKILL && SLIMBUS && SND_SOC && I2C && VIDEO_DEV
+	depends on !MSM_BT_POWER && m
+	default m

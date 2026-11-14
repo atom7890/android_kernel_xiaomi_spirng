@@ -131,7 +131,7 @@ obj-$(CONFIG_CNSS_GENL) += cnss_genl/
 obj-$(CONFIG_WCNSS_MEM_PRE_ALLOC) += cnss_prealloc/
 obj-y += cnss_utils/
 ifeq ($(KBUILD_EXTMOD),)
-export WLAN_PLATFORM_ROOT := $(srctree)/techpack/wlan/wlan/platform
+export WLAN_PLATFORM_ROOT := $(srctree)/techpack/wlan/platform
 subdir-ccflags-y += -DCONFIG_CNSS_OUT_OF_TREE -DCONFIG_ICNSS2_QMI \
 	-DCONFIG_WCNSS_MEM_PRE_ALLOC
 obj-m += cnss_genl/ cnss_prealloc/ cnss_utils/ icnss2/

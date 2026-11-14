@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
 KDIR := $(TOP)/kernel_platform/msm-kernel
-DISPLAY_ROOT ?= $(srctree)/techpack/display/display-drivers
+DISPLAY_ROOT ?= $(srctree)/techpack/display
 KERNEL_SRC ?= $(srctree)
 KERNEL_ROOT ?= $(srctree)
 
