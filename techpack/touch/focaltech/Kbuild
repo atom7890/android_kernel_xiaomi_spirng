@@ -8,5 +8,5 @@ focaltech_spi-y := focaltech_core.o focaltech_ex_fun.o focaltech_ex_mode.o \
         focaltech_spi_v2.o focaltech_flash_spi.o \
         focaltech_test/focaltech_test.o focaltech_test/focaltech_test_ini.o \
 	focaltech_test/supported_ic/focaltech_test_ft8725.o
-ccflags-y += -include $(srctree)/techpack/include/spring-panel-event-notifier.h
+ccflags-y += -include $(srctree)/techpack/touch/spring-panel-event-notifier.h
 ccflags-y += -Wno-macro-redefined
