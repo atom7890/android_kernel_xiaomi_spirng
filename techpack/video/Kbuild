@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
-VIDEO_ROOT ?= $(srctree)/techpack/video/video-driver-blair
+VIDEO_ROOT ?= $(srctree)/techpack/video
 
 
 ifeq ($(CONFIG_ARCH_WAIPIO), y)

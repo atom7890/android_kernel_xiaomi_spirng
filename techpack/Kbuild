@@ -11,6 +11,6 @@ obj-$(CONFIG_SPRING_DATA) += dataipa/drivers/platform/msm/
 obj-$(CONFIG_SPRING_DATA) += datarmnet/core/ datarmnet-ext/
 obj-$(CONFIG_SPRING_SECUREMSM) += securemsm/securemsm-kernel/
 obj-$(CONFIG_SPRING_MEDIA) += camera/ graphics/
-obj-$(CONFIG_SPRING_MEDIA) += video/video-driver-blair/
+obj-$(CONFIG_SPRING_MEDIA) += video/
 obj-y += wlan/
 obj-$(CONFIG_SPRING_TMS) += nfc/pn560/ nfc/tmsdrv/
