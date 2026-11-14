@@ -12,6 +12,5 @@ obj-$(CONFIG_SPRING_DATA) += datarmnet/core/ datarmnet-ext/
 obj-$(CONFIG_SPRING_SECUREMSM) += securemsm/securemsm-kernel/
 obj-$(CONFIG_SPRING_MEDIA) += camera/ graphics/
 obj-$(CONFIG_SPRING_MEDIA) += video/video-driver-blair/
-obj-$(CONFIG_SPRING_WLAN_PLATFORM) += wlan/platform/
-obj-$(CONFIG_SPRING_WLAN) += wlan/qcacld-3.0/
+obj-y += wlan/
 obj-$(CONFIG_SPRING_TMS) += nfc/pn560/ nfc/tmsdrv/

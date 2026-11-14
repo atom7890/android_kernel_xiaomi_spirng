@@ -1,0 +1,5 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# Spring Qualcomm Wi-Fi: the platform drivers (icnss2/cnss) and the Adrastea host driver (qcacld-3.0,
+# which compiles the shared code in cmn/). fw-api holds headers only and is not built on its own.
+obj-$(CONFIG_SPRING_WLAN_PLATFORM) += platform/
+obj-$(CONFIG_SPRING_WLAN) += qcacld-3.0/
