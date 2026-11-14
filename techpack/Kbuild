@@ -1,6 +1,6 @@
 obj-y += power/ storage/ touch/ fingerprint/
 obj-$(CONFIG_SPRING_DISPLAY) += display/msm/
-obj-$(CONFIG_NXP_NFC_I2C) += nfc/nxp/opensource/driver/
+obj-$(CONFIG_NXP_NFC_I2C) += nfc/nxp/
 obj-$(CONFIG_SPRING_DSP) += dsp/
 obj-$(CONFIG_SPRING_AUDIO) += audio/
 obj-$(CONFIG_MIEV) += include/miev/
