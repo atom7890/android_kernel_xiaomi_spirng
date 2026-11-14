@@ -3,7 +3,7 @@
 CAMERA_KERNEL_ROOT ?= $(srctree)/techpack/camera
 KERNEL_ROOT ?= $(srctree)
 ifeq ($(KBUILD_EXTMOD),)
-ccflags-y += -I$(srctree)/techpack/securemsm/securemsm-kernel/include
+ccflags-y += -I$(srctree)/techpack/securemsm/include
 endif
 
 ifeq ($(CONFIG_QCOM_CAMERA_DEBUG), y)
@@ -101,8 +101,8 @@ ccflags-$(CONFIG_MSM_GLOBAL_SYNX) += -I$(KERNEL_ROOT)/drivers/media/platform/msm
 ccflags-$(CONFIG_TARGET_SYNX_ENABLE) += -I$(SYNXVENDORDIR)/include/uapi/synx/media
 ccflags-$(CONFIG_TARGET_SYNX_ENABLE) += -I$(SYNXVENDORDIR)/msm/synx
 ccflags-$(CONFIG_TARGET_SYNX_ENABLE) += -DCONFIG_TARGET_SYNX_ENABLE=1
-ccflags-y += -I$(CAMERA_KERNEL_ROOT)/../securemsm-kernel/
-ccflags-y += -I$(CAMERA_KERNEL_ROOT)/../securemsm-kernel/include/
+ccflags-y += -I$(srctree)/techpack/securemsm/
+ccflags-y += -I$(srctree)/techpack/securemsm/include/
 
 # After creating lists, add content of 'ccflags-m' variable to 'ccflags-y' one.
 ccflags-y += ${ccflags-m}

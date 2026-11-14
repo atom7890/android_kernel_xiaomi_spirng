@@ -1,4 +1,4 @@
-SSG_MODULE_ROOT ?= $(srctree)/techpack/securemsm/securemsm-kernel
+SSG_MODULE_ROOT ?= $(srctree)/techpack/securemsm
 ccflags-y += -I$(SSG_MODULE_ROOT)/smcinvoke/compat -DSMCINVOKE_TRACE_INCLUDE_PATH=.
 
 LINUXINCLUDE += -I$(SSG_MODULE_ROOT)/ \

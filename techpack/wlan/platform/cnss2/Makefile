@@ -18,10 +18,10 @@ ccflags-y += -I$(srctree)/drivers/net/wireless/cnss_utils
 endif
 
 ifeq ($(CONFIG_CNSS_HW_SECURE_DISABLE), y)
-ccflags-y += -I$(WLAN_PLATFORM_ROOT)/../../securemsm-kernel/smcinvoke/
-ccflags-y += -I$(WLAN_PLATFORM_ROOT)/../../securemsm-kernel/linux/
-ccflags-y += -I$(WLAN_PLATFORM_ROOT)/../../securemsm-kernel/include/linux/
-ccflags-y += -I$(WLAN_PLATFORM_ROOT)/../../securemsm-kernel/include/uapi/linux/
+ccflags-y += -I$(srctree)/techpack/securemsm/smcinvoke/
+ccflags-y += -I$(srctree)/techpack/securemsm/linux/
+ccflags-y += -I$(srctree)/techpack/securemsm/include/linux/
+ccflags-y += -I$(srctree)/techpack/securemsm/include/uapi/linux/
 endif
 
 obj-$(CONFIG_CNSS2) += cnss2.o
