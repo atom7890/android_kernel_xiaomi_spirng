@@ -1,0 +1,5 @@
+export MMRM_ROOT ?= $(srctree)/techpack/multimedia
+include $(MMRM_ROOT)/config/waipiommrm.conf
+LINUXINCLUDE += -include $(MMRM_ROOT)/config/waipiommrmconf.h
+
+obj-m += driver/
