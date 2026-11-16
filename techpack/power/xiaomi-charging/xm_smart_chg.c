@@ -3,6 +3,7 @@
 
 #define TAG                     "[xm_smart_chg]"
 #define xm_err(fmt, ...)        pr_err(TAG "[%s]:" fmt, __func__, ##__VA_ARGS__)
+#define xm_err_once(fmt, ...)   pr_err_once(TAG "[%s]:" fmt, __func__, ##__VA_ARGS__)
 #define xm_warn(fmt, ...)       pr_warn(TAG "[%s]:" fmt, __func__, ##__VA_ARGS__)
 #define xm_notice(fmt, ...)     pr_notice(TAG "[%s]:" fmt, __func__, ##__VA_ARGS__)
 #define xm_info(fmt, ...)       pr_info(TAG "[%s]:" fmt, __func__, ##__VA_ARGS__)
@@ -619,37 +620,37 @@ void xm_charge_update_date(void)
 
         info->fv_votable = find_votable("FV");
         if (!info->fv_votable) {
-                xm_err("failed to get fv_votable\n");
+                xm_err_once("failed to get fv_votable\n");
                 return;
         }
         info->fcc_votable = find_votable("FCC");
         if (!info->fcc_votable) {
-                xm_err("failed to get fcc_votable\n");
+                xm_err_once("failed to get fcc_votable\n");
                 return;
         }
         info->fcc_main_votable = find_votable("FCC_MAIN");
         if (!info->fcc_main_votable) {
-        	xm_err("failed to get fcc_main_votable\n");
+        	xm_err_once("failed to get fcc_main_votable\n");
         	return;
         }
         info->chg_disable_votable = find_votable("CHG_DISABLE");
         if (!info->chg_disable_votable) {
-                xm_err("failed to get chg_disable_votable\n");
+                xm_err_once("failed to get chg_disable_votable\n");
                 return;
         }
         info->low_fast_votable = find_votable("LOW_FAST");
         if (!info->low_fast_votable) {
-                xm_err("failed to get low_fast_votable\n");
+                xm_err_once("failed to get low_fast_votable\n");
                 return;
         }
         info->night_charging_votable = find_votable("NIGHT_CHARGING");
         if (!info->night_charging_votable) {
-                xm_err("failed to get night_charging_votable\n");
+                xm_err_once("failed to get night_charging_votable\n");
                 return;
         }
         info->usb_icl_votable = find_votable("USB_ICL");
 	if (info->usb_icl_votable == NULL) {
-		xm_err("failed to get USB_ICL votable");
+		xm_err_once("failed to get USB_ICL votable");
 		return;
 	}
 

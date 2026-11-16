@@ -1900,6 +1900,8 @@ static void connector_protect_workfunc(struct work_struct *work) {
 	int rc;
 	int connector_temp1 = 0;
 	int connector_temp2 = 0;
+	bool conn_temp_failed = false;
+	bool smb1390_temp_failed = false;
 	int temp_max;
 	union power_supply_propval prop = {0, };
 	struct qpnp_qg *chip = container_of(work, struct qpnp_qg, connector_protect_work.work);
@@ -1910,18 +1912,27 @@ static void connector_protect_workfunc(struct work_struct *work) {
 	}
 
 	rc = qg_read_iio_chan(chip, CONN_TEMP, &prop.intval);
-	if (rc < 0)
-		pr_err("Failed to get conn_temp, rc=%d\n", rc);
-	else
+	if (rc < 0) {
+		conn_temp_failed = true;
+		pr_err_once("Failed to get conn_temp, rc=%d\n", rc);
+	} else
 		connector_temp1 = prop.intval;
 
 	rc = qg_read_iio_chan(chip, SMB1390_TEMP, &prop.intval);
-	if (rc < 0)
-		pr_err("Failed to get smb1390_temp, rc=%d\n", rc);
-	else
+	if (rc < 0) {
+		smb1390_temp_failed = true;
+		pr_err_once("Failed to get smb1390_temp, rc=%d\n", rc);
+	} else
 		connector_temp2 = prop.intval;
 
-	if (connector_temp1 < 0 && connector_temp2 < 0) {
+	/*
+	 * Neither connector sensor exists on this hardware (Spring has no
+	 * conn_temp or smb1390_temp channel). A failed read leaves the temperature
+	 * at 0, so the check below never saw it and the work kept polling every
+	 * second. Stop polling here, as the message says it does.
+	 */
+	if ((conn_temp_failed && smb1390_temp_failed) ||
+	    (connector_temp1 < 0 && connector_temp2 < 0)) {
 		pr_info("Not JP version, cancel connector_protect\n");
 		return;
 	}
