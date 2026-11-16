@@ -329,8 +329,13 @@
 	status = "ok";
 
 	qcom,leica-used-i2c;
+	/*
+	 * No pm8008 answers on this I2C bus on Spring (reads fail with -107) and
+	 * nothing else references its regulators, so keep both nodes disabled.
+	 */
 	pm8008_8: qcom,pm8008@8 {
 		compatible = "qcom,i2c-pmic";
+		status = "disabled";
 		reg = <0x8>;
 		#address-cells = <1>;
 		#size-cells = <0>;
@@ -349,6 +354,7 @@
 
 	pm8008_9: qcom,pm8008@9 {
 		compatible = "qcom,i2c-pmic";
+		status = "disabled";
 		reg = <0x9>;
 		#address-cells = <1>;
 		#size-cells = <0>;

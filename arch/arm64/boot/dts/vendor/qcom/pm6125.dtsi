@@ -144,9 +144,15 @@
 			#interrupt-cells = <2>;
 		};
 
+		/*
+		 * The RTC at SID 0 is described by pmk8350_rtc (pmk8350.dtsi), which
+		 * registers as rtc0. This node has no reg and failed to probe with
+		 * -EPERM on every boot, so leave it disabled.
+		 */
 		pm6125_rtc: qcom,pm6125_rtc {
 			compatible = "qcom,pm8941-rtc";
 			interrupts = <0x0 0x61 0x1 IRQ_TYPE_NONE>;
+			status = "disabled";
 		};
 
                 pm6125_sdam: sdam@800 {
