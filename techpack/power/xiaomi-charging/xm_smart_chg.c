@@ -937,7 +937,6 @@ static int xm_smart_chg_check_panel(void)
 {
     struct device_node *charger_screen_node, *panel_node;
     struct drm_panel *panel;
-    int retry_num = 0;
     int count;
     int i;
 
@@ -953,30 +952,32 @@ static int xm_smart_chg_check_panel(void)
         return -ENODEV;
     }
 
-    do {
-        for (i = 0; i < count; i++) {
-            panel_node = of_parse_phandle(charger_screen_node, "panel", i);
-            xm_info("retry_num: %d, try to add of node panel: %s\n", retry_num, panel_node);
-            panel = of_drm_find_panel(panel_node);
-            of_node_put(panel_node);
-            if (!IS_ERR(panel)) {
-                prim_panel = panel;
-                retry_num = 3;
-                break;
-            } else {
-                prim_panel = NULL;
-                msleep(500);
-            }
+    /*
+     * Look each panel up once. The panel driver may simply not be loaded yet
+     * (in recovery msm_drm.ko comes after this module in modules.load.recovery
+     * and the loader is sequential, so it can never appear while we wait).
+     * Sleeping and retrying here held up the whole first-stage module load for
+     * about 48 seconds. Report -EPROBE_DEFER at once; xm_smart_chg_post_init()
+     * only logs it and carries on without the screen-state notifier, as it
+     * already did after the wait ran out.
+     */
+    prim_panel = NULL;
+    for (i = 0; i < count; i++) {
+        panel_node = of_parse_phandle(charger_screen_node, "panel", i);
+        xm_info("try to find panel %d: %pOF\n", i, panel_node);
+        panel = of_drm_find_panel(panel_node);
+        of_node_put(panel_node);
+        if (!IS_ERR(panel)) {
+            prim_panel = panel;
+            break;
         }
-        ++retry_num;
-    } while (retry_num < 3);
+    }
 
-    if (PTR_ERR(prim_panel) == -EPROBE_DEFER) {
-        xm_err("ERROR: Cannot find prim_panel of panel_node!");
+    if (!prim_panel) {
+        xm_err_once("panel not registered yet, no screen-state notifier\n");
         return -EPROBE_DEFER;
     }
 
-    xm_info("count of panel in panel_node PTR_ERR_prim_panel  is: %d\n", PTR_ERR(prim_panel));
     return 0;
 }
 
