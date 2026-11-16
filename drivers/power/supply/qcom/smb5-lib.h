@@ -449,6 +449,8 @@ struct smb_charger {
 	struct votable		*awake_votable;
 	struct votable		*pl_disable_votable;
 	struct votable		*chg_disable_votable;
+	struct votable		*low_fast_votable;
+	struct votable		*night_charging_votable;
 	struct votable		*pl_enable_votable_indirect;
 	struct votable		*cp_disable_votable;
 	struct votable		*cp_ilim_votable;
@@ -558,6 +560,8 @@ struct smb_charger {
 	u8			typec_try_mode;
 	enum lpd_stage		lpd_stage;
 	bool			lpd_disabled;
+	int			low_fast_working_flag;
+	int			night_charging_working_flag;
 	enum lpd_reason		lpd_reason;
 	bool			fcc_stepper_enable;
 	int			die_temp;

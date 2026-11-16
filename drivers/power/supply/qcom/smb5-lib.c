@@ -1773,6 +1773,35 @@ static int smblib_chg_disable_vote_callback(struct votable *votable, void *data,
 	return 0;
 }
 
+/*
+ * LOW_FAST and NIGHT_CHARGING only record whether any client is voting. The
+ * stock Xiaomi driver creates them the same way; xm_smart_chg looks them up
+ * by name and votes on them.
+ */
+static int smblib_low_fast_vote_callback(struct votable *votable, void *data,
+			int low_fast, const char *client)
+{
+	struct smb_charger *chg = data;
+
+	chg->low_fast_working_flag = low_fast;
+	smblib_dbg(chg, PR_MISC, "client: %s low_fast_working_flag: %d\n",
+		   client ? client : "n/a", low_fast);
+
+	return 0;
+}
+
+static int smblib_night_charging_vote_callback(struct votable *votable,
+			void *data, int night_charging, const char *client)
+{
+	struct smb_charger *chg = data;
+
+	chg->night_charging_working_flag = night_charging;
+	smblib_dbg(chg, PR_MISC, "client: %s night_charging_working_flag: %d\n",
+		   client ? client : "n/a", night_charging);
+
+	return 0;
+}
+
 static int smblib_hdc_irq_disable_vote_callback(struct votable *votable,
 				void *data, int disable, const char *client)
 {
@@ -8325,6 +8354,25 @@ static int smblib_create_votables(struct smb_charger *chg)
 		return rc;
 	}
 
+	chg->low_fast_votable = create_votable("LOW_FAST", VOTE_SET_ANY,
+					smblib_low_fast_vote_callback,
+					chg);
+	if (IS_ERR(chg->low_fast_votable)) {
+		rc = PTR_ERR(chg->low_fast_votable);
+		chg->low_fast_votable = NULL;
+		return rc;
+	}
+
+	chg->night_charging_votable = create_votable("NIGHT_CHARGING",
+					VOTE_SET_ANY,
+					smblib_night_charging_vote_callback,
+					chg);
+	if (IS_ERR(chg->night_charging_votable)) {
+		rc = PTR_ERR(chg->night_charging_votable);
+		chg->night_charging_votable = NULL;
+		return rc;
+	}
+
 	chg->limited_irq_disable_votable = create_votable(
 				"USB_LIMITED_IRQ_DISABLE",
 				VOTE_SET_ANY,
@@ -8387,6 +8435,10 @@ static void smblib_destroy_votables(struct smb_charger *chg)
 		destroy_votable(chg->awake_votable);
 	if (chg->chg_disable_votable)
 		destroy_votable(chg->chg_disable_votable);
+	if (chg->low_fast_votable)
+		destroy_votable(chg->low_fast_votable);
+	if (chg->night_charging_votable)
+		destroy_votable(chg->night_charging_votable);
 	if (chg->bat_temp_irq_disable_votable)
 		destroy_votable(chg->bat_temp_irq_disable_votable);
 }
