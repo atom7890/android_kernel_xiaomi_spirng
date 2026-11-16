@@ -1,5 +1,5 @@
 ifeq ($(KBUILD_EXTMOD),)
-MODNAME := qca_cld3_wlan
+MODNAME := wlan
 WLAN_ROOT := $(srctree)/techpack/wlan/qcacld-3.0
 WLAN_PROFILE := spring_gki_adrastea
 DATA_IPA_INC := $(srctree)/techpack/dataipa/drivers/platform/msm/include
