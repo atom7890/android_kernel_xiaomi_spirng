@@ -24,6 +24,7 @@
 #if BOOT_UPDATE_FIRMWARE
 /* N19 code for HQ-355103 by liaoxianguo at 2023/12/21 start */
 extern void get_tp_info(void);
+extern void nvt_restore_host_state(void);
 /* N19 code for HQ-355103 by liaoxianguo at 2023/12/21 end */
 static ktime_t start, end;
 const struct firmware *fw_entry = NULL;
@@ -906,6 +907,7 @@ void Boot_Update_Firmware(struct work_struct *work)
 {
 	mutex_lock(&ts->lock);
 	nvt_update_firmware(BOOT_UPDATE_FIRMWARE_NAME);
+	nvt_restore_host_state();
 	/* N19 code for HQ-355103 by liaoxianguo at 2023/12/21 start */
 	get_tp_info();
 	/* N19 code for HQ-355103 by liaoxianguo at 2023/12/21 start */

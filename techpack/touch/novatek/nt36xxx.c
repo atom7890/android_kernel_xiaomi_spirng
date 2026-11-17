@@ -78,6 +78,8 @@ static int32_t nvt_ts_suspend(struct device *dev);
 
 
 static bool nvt_charger_connected;
+/* Last charger state written to the chip: -1 unknown, 0 out, 1 in. */
+static int nvt_charger_sent = -1;
 /* N19 code for HQ-354491 by p-luozhibin1 at 2023.1.22 end */
 #if NVT_TOUCH_ESD_PROTECT
 static struct delayed_work nvt_esd_check_work;
@@ -1805,6 +1807,31 @@ static void get_lockdown_info(struct work_struct *work)
 }
 /* N19 code for jyf_123 by jiyongfei at 2023/3/4 end */
 
+/*
+ * A firmware download resets the host command state of the chip, so the
+ * modes set from the host are lost: proximity, palm and charger mode. The
+ * resume path restores them, the watchdog recovery and the boot update
+ * must too. The caller holds ts->lock.
+ */
+void nvt_restore_host_state(void)
+{
+	uint8_t buf[2] = { EVENT_MAP_HOST_CMD, 0 };
+
+	if (!bTouchIsAwake)
+		return;
+
+	msleep(50);
+	if (g_priximity_enable)
+		nvt_set_proximity_switch(1);
+#if IS_ENABLED(CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE)
+	if (ts->palm_sensor_switch)
+		nvt_set_pocket_palm_switch(true);
+#endif
+	buf[1] = nvt_charger_connected ? 0x53 : 0x51;
+	CTP_SPI_WRITE(ts->client, buf, 2);
+	nvt_charger_sent = nvt_charger_connected;
+}
+
 #if NVT_TOUCH_WDT_RECOVERY
 static uint8_t recovery_cnt = 0;
 static uint8_t nvt_wdt_fw_recovery(uint8_t *point_data)
@@ -2012,6 +2039,7 @@ static irqreturn_t nvt_ts_work_func(int irq, void *data)
 		nvt_read_fw_history_all();
 		nvt_update_firmware(BOOT_UPDATE_FIRMWARE_NAME);
 		nvt_read_fw_history_all();
+		nvt_restore_host_state();
 		goto XFER_ERROR;
 	}
 #endif /* #if NVT_TOUCH_WDT_RECOVERY */
@@ -2526,6 +2554,14 @@ void nvt_charger_mode_work(struct work_struct *work)
 	if (!bTouchIsAwake)
 		return;
 
+	/*
+	 * Every power supply change queues this work, and a plug-in sends
+	 * several within milliseconds. Write to the chip only when the
+	 * state really changed.
+	 */
+	if (nvt_charger_sent == nvt_charger_connected)
+		return;
+
 	if (nvt_charger_connected) {
 		buf[0] = EVENT_MAP_HOST_CMD;
 		buf[1] = 0x53; /*USB IN*/
@@ -2537,6 +2573,7 @@ void nvt_charger_mode_work(struct work_struct *work)
 		CTP_SPI_WRITE(ts->client, buf, 2);
 		NVT_LOG("nvt out charger mode\n");
 	}
+	nvt_charger_sent = nvt_charger_connected;
 }
 
 static int nvt_detect_charger_notifier_callback(struct notifier_block *self,
@@ -3575,6 +3612,7 @@ static int32_t nvt_ts_resume(struct device *dev)
 		CTP_SPI_WRITE(ts->client, buf, 2);
 		NVT_LOG("nvt out charger mode\n");
 	}
+	nvt_charger_sent = nvt_charger_connected;
 /* N19 code for HQ-354491 by p-luozhibin1 at 2023.1.22 end */
 	NVT_LOG("end\n");
 
