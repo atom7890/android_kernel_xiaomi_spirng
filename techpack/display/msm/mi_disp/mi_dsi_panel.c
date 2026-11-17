@@ -3569,15 +3569,37 @@ int mi_dsi_panel_match_fps_setting(struct dsi_panel *panel,
 		return 0;
 	}
 
-	if (adj_mode->timing.refresh_rate == 120)
+	/*
+	 * The panel defines its own command set for 144 Hz (it sets the
+	 * 0xCF register differently), which the stock driver sends too.
+	 * Without it the panel keeps the settings of the previous rate and
+	 * the touch controller resets after the switch.
+	 */
+	if (adj_mode->timing.refresh_rate == 144)
+		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_DISP_144HZ);
+	else if (adj_mode->timing.refresh_rate == 120)
 		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_DISP_120HZ);
 	else if (adj_mode->timing.refresh_rate == 90)
 		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_DISP_90HZ);
 	else if (adj_mode->timing.refresh_rate == 60)
 		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_DISP_60HZ);
+	/*
+	 * The panel has one setting for 144 Hz and one for every other rate.
+	 * Leaving the lower rates out kept the 144 Hz setting while the display
+	 * idled at 30 Hz, and the next switch to 144 Hz reset the touch
+	 * controller. The stock driver sends the set for each of these rates.
+	 */
+	else if (adj_mode->timing.refresh_rate == 50)
+		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_DISP_50HZ);
+	else if (adj_mode->timing.refresh_rate == 48)
+		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_DISP_48HZ);
+	else if (adj_mode->timing.refresh_rate == 45)
+		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_DISP_45HZ);
+	else if (adj_mode->timing.refresh_rate == 40)
+		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_DISP_40HZ);
 	else if (adj_mode->timing.refresh_rate == 30) {
 		panel->mi_cfg.aod_enter_flags =true;
-		//	rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_DISP_30HZ);
+		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_DISP_30HZ);
 	}
 
 	if (rc) {
