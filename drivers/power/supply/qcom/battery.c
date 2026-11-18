@@ -147,6 +147,7 @@ enum {
 	RESTRICT_CHG_ENABLE,
 	RESTRICT_CHG_CURRENT,
 	FCC_STEPPING_IN_PROGRESS,
+	REAL_TYPE,
 };
 
 enum {
@@ -692,6 +693,68 @@ static ssize_t fcc_stepping_in_progress_show(struct class *c,
 }
 static CLASS_ATTR_RO(fcc_stepping_in_progress);
 
+/*
+ * The stock Xiaomi build exports the charger type here, and the vendor
+ * daemon batterysecret opens this file before it does anything else.  The
+ * names are the ones the stock kernel prints.
+ */
+static ssize_t real_type_show(struct class *c, struct class_attribute *attr,
+				char *ubuf)
+{
+	struct pl_data *chip = container_of(c, struct pl_data,
+			qcom_batt_class);
+	const char *name = "Unknown";
+	int type = 0, pd_active = 0;
+
+	if (chip->chg_param->iio_read(chip->dev, PSY_IIO_USB_REAL_TYPE,
+				      &type) < 0)
+		return scnprintf(ubuf, PAGE_SIZE, "%s\n", name);
+
+	chip->chg_param->iio_read(chip->dev, PSY_IIO_PD_ACTIVE, &pd_active);
+
+	switch (type) {
+	case POWER_SUPPLY_TYPE_USB:
+		name = "USB";
+		break;
+	case POWER_SUPPLY_TYPE_USB_DCP:
+		name = "USB_DCP";
+		break;
+	case POWER_SUPPLY_TYPE_USB_CDP:
+		name = "USB_CDP";
+		break;
+	case POWER_SUPPLY_TYPE_USB_ACA:
+		name = "USB_ACA";
+		break;
+	case POWER_SUPPLY_TYPE_USB_TYPE_C:
+		name = "USB_C";
+		break;
+	case POWER_SUPPLY_TYPE_USB_PD:
+		name = pd_active == QTI_POWER_SUPPLY_PD_PPS_ACTIVE ?
+							"USB_PPS" : "USB_PD";
+		break;
+	case POWER_SUPPLY_TYPE_USB_PD_DRP:
+		name = "USB_PD_DRP";
+		break;
+	case QTI_POWER_SUPPLY_TYPE_USB_HVDCP:
+		name = "USB_HVDCP";
+		break;
+	case QTI_POWER_SUPPLY_TYPE_USB_HVDCP_3:
+		name = "USB_HVDCP_3";
+		break;
+	case QTI_POWER_SUPPLY_TYPE_USB_HVDCP_3P5:
+		name = "USB_HVDCP_3P5";
+		break;
+	case QTI_POWER_SUPPLY_TYPE_USB_FLOAT:
+		name = "USB_FLOAT";
+		break;
+	default:
+		break;
+	}
+
+	return scnprintf(ubuf, PAGE_SIZE, "%s\n", name);
+}
+static CLASS_ATTR_RO(real_type);
+
 static struct attribute *batt_class_attrs[] = {
 	[VER]			= &class_attr_version.attr,
 	[SLAVE_PCT]		= &class_attr_slave_pct.attr,
@@ -699,6 +762,7 @@ static struct attribute *batt_class_attrs[] = {
 	[RESTRICT_CHG_CURRENT]	= &class_attr_restrict_cur.attr,
 	[FCC_STEPPING_IN_PROGRESS]
 				= &class_attr_fcc_stepping_in_progress.attr,
+	[REAL_TYPE]		= &class_attr_real_type.attr,
 	NULL,
 };
 ATTRIBUTE_GROUPS(batt_class);

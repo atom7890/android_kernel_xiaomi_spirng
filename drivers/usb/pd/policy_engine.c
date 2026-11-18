@@ -923,6 +923,42 @@ static int pd_select_pdo(struct usbpd *pd, int pdo_pos, int uv, int ua)
 	return 0;
 }
 
+/*
+ * Highest power fixed pdo up to 9V that offers at least 2A, or the first pdo
+ * when there is none.  The stock kernel simply takes the second pdo; checking
+ * the voltage and the current keeps a charger with other pdos on a safe one.
+ */
+#define PD_PLAIN_MAX_MV		9000
+#define PD_PLAIN_MIN_MA		2000
+
+static int pd_pick_plain_pdo(struct usbpd *pd)
+{
+	int i, best = 1, best_mw = 0;
+
+	for (i = 0; i < PD_MAX_DATA_OBJ; i++) {
+		u32 pdo = pd->received_pdos[i];
+		int mv, ma, mw;
+
+		if (!pdo)
+			break;
+		if (PD_SRC_PDO_TYPE(pdo) != PD_SRC_PDO_TYPE_FIXED)
+			continue;
+
+		mv = PD_SRC_PDO_FIXED_VOLTAGE(pdo) * 50;
+		ma = PD_SRC_PDO_FIXED_MAX_CURR(pdo) * 10;
+		if (mv > PD_PLAIN_MAX_MV || ma < PD_PLAIN_MIN_MA)
+			continue;
+
+		mw = mv * ma / 1000;
+		if (mw > best_mw) {
+			best_mw = mw;
+			best = i + 1;
+		}
+	}
+
+	return best;
+}
+
 static int pd_eval_src_caps(struct usbpd *pd)
 {
 	int i;
@@ -965,8 +1001,13 @@ static int pd_eval_src_caps(struct usbpd *pd)
 	if (pd->peer_usb_comm && pd->current_dr == DR_UFP && !pd->pd_connected)
 		start_usb_peripheral(pd);
 
-	/* Select the first PDO (vSafe5V) immediately. */
-	pd_select_pdo(pd, 1, 0, 0);
+	/*
+	 * The stock Xiaomi usbpd asks for the 9V pdo here when the source does
+	 * not offer PPS, so a charger Hard Reset or Soft Reset never leaves the
+	 * phone on 5V.  With PPS (or a single pdo) the first PDO (vSafe5V) is
+	 * selected and the policy manager takes over.
+	 */
+	pd_select_pdo(pd, pps_found ? 1 : pd_pick_plain_pdo(pd), 0, 0);
 
 	return 0;
 }
@@ -4302,6 +4343,17 @@ int usbpd_get_src_cap_id(struct usbpd *pd)
 }
 EXPORT_SYMBOL_GPL(usbpd_get_src_cap_id);
 
+/*
+ * On the stock Xiaomi kernel the vendor daemon hvdcp_opti cannot reach this
+ * file, because the stock device is named Charging_Adapter/pd_adapter.  With
+ * the Qualcomm names it wrote 1 here and put the phone back on 5V whenever it
+ * thought the battery was full.  Ignore writes from user space; the kernel
+ * drivers use usbpd_select_pdo() directly.
+ */
+static bool allow_user_select_pdo;
+module_param(allow_user_select_pdo, bool, 0644);
+MODULE_PARM_DESC(allow_user_select_pdo, "allow user space to request a pdo through sysfs");
+
 static ssize_t select_pdo_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t size)
 {
@@ -4309,6 +4361,11 @@ static ssize_t select_pdo_store(struct device *dev,
 	int src_cap_id;
 	int pdo, uv = 0, ua = 0;
 	int ret;
+
+	if (!allow_user_select_pdo) {
+		usbpd_dbg(&pd->dev, "select_pdo write ignored\n");
+		return -EPERM;
+	}
 
 	mutex_lock(&pd->swap_lock);
 

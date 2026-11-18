@@ -1225,8 +1225,10 @@ static int cycle_count_reduce_voltage(struct usbpd_pm *pdpm)
 
 /*
  * Plain USB-PD adapters (fixed PDOs only, no PPS) never reach the charge pump
- * state machine, so the sink would stay on the 5V default PDO.  Pick the
- * highest fixed PDO up to 9V that can supply at least 2A.
+ * state machine.  The stock Xiaomi usbpd asks for the 9V pdo itself when the
+ * source capabilities arrive (pd_eval_src_caps), so a charger reset never
+ * leaves the phone on 5V.  Our usbpd does the same; this only logs the source
+ * pdos and limits the input current once the 9V contract is active.
  */
 #ifndef PD_SRC_PDO_TYPE_FIXED
 #define PD_SRC_PDO_TYPE_FIXED		0
@@ -1234,11 +1236,37 @@ static int cycle_count_reduce_voltage(struct usbpd_pm *pdpm)
 #define PLAIN_PD_MAX_MV		9000
 #define PLAIN_PD_MIN_MA		2000
 #define PLAIN_PD_RETRIES	10
+#define PLAIN_PD_9V_UV		7000000
+
+/*
+ * On a plain 9V contract the input current limit followed the contract, so the
+ * phone drew the whole 3A (2.99A measured) and charged the battery at up to
+ * 4.7A.  The stock kernel limits the input to 2.4A and the battery to about
+ * 4A, and with it the same Xiaomi adapter keeps the connection.  The adapters
+ * reset their link when they are loaded to the end of the contract.
+ *
+ * The cap applies only when the contract offers more than the cap.  It can be
+ * changed before plugging the charger in, 0 turns it off:
+ *   echo 2400 > /sys/module/pd_policy_manager/parameters/plain_pd_icl_ma
+ */
+static int plain_pd_icl_ma = 2400;
+module_param(plain_pd_icl_ma, int, 0644);
+MODULE_PARM_DESC(plain_pd_icl_ma, "input current cap in mA on a plain 9V contract, 0 for none");
+
+#define PLAIN_PD_ICL_VOTER	"PLAIN_PD_ICL_VOTER"
+
+static void usbpd_pm_plain_pd_icl_release(void)
+{
+	vote(find_votable("USB_ICL"), PLAIN_PD_ICL_VOTER, false, 0);
+}
 
 static void usbpd_pm_select_plain_pd_pdo(struct usbpd_pm *pdpm)
 {
 	struct usbpd_pdo pdo[PDO_MAX_NUM];
-	int i, best = 0, best_mw = 0, mw, ret = -EBUSY;
+	struct power_supply *psy_usb;
+	union power_supply_propval pval;
+	int i, best = 0, best_mw = 0, best_ma = 0, mw, ret = -EBUSY;
+	bool at_9v = false;
 
 	if (pdpm->plain_pd_pdo_done || IS_ERR_OR_NULL(pdpm->pd))
 		return;
@@ -1261,6 +1289,15 @@ static void usbpd_pm_select_plain_pd_pdo(struct usbpd_pm *pdpm)
 	for (i = 0; i < PDO_MAX_NUM; i++) {
 		if (!pdo[i].pos)
 			break;
+		pr_info("plain pd: source pdo%d type %d %d-%d mV %d mA%s\n",
+			pdo[i].pos, pdo[i].type, pdo[i].min_volt_mv,
+			pdo[i].max_volt_mv, pdo[i].curr_ma,
+			pdo[i].pps ? " (PPS)" : "");
+	}
+
+	for (i = 0; i < PDO_MAX_NUM; i++) {
+		if (!pdo[i].pos)
+			break;
 		if (pdo[i].type != PD_SRC_PDO_TYPE_FIXED ||
 		    pdo[i].max_volt_mv > PLAIN_PD_MAX_MV ||
 		    pdo[i].curr_ma < PLAIN_PD_MIN_MA)
@@ -1268,6 +1305,7 @@ static void usbpd_pm_select_plain_pd_pdo(struct usbpd_pm *pdpm)
 		mw = pdo[i].max_volt_mv * pdo[i].curr_ma / 1000;
 		if (mw > best_mw) {
 			best_mw = mw;
+			best_ma = pdo[i].curr_ma;
 			best = pdo[i].pos;
 		}
 	}
@@ -1277,16 +1315,26 @@ static void usbpd_pm_select_plain_pd_pdo(struct usbpd_pm *pdpm)
 		return;
 	}
 
-	for (i = 0; i < PLAIN_PD_RETRIES; i++) {
-		ret = usbpd_select_pdo(pdpm->pd, best, 0, 0);
-		if (ret != -EBUSY)
-			break;
-		msleep(300);
+	/* usbpd already requested the pdo; wait until vbus shows the 9V. */
+	psy_usb = power_supply_get_by_name("usb");
+	if (!IS_ERR_OR_NULL(psy_usb)) {
+		if (!power_supply_get_property(psy_usb,
+				POWER_SUPPLY_PROP_VOLTAGE_NOW, &pval) &&
+		    pval.intval > PLAIN_PD_9V_UV)
+			at_9v = true;
+		power_supply_put(psy_usb);
 	}
+	if (!at_9v)
+		return;
 
-	pr_info("plain pd: select fixed pdo %d (%d mW) ret=%d\n", best, best_mw, ret);
-	if (!ret)
-		pdpm->plain_pd_pdo_done = true;
+	pdpm->plain_pd_pdo_done = true;
+	pr_info("plain pd: 9V contract active (pdo %d, %d mW)\n", best, best_mw);
+	if (plain_pd_icl_ma > 0 && best_ma > plain_pd_icl_ma) {
+		vote(find_votable("USB_ICL"), PLAIN_PD_ICL_VOTER, true,
+		     plain_pd_icl_ma * 1000);
+		pr_info("plain pd: input current capped to %d mA of %d mA\n",
+			plain_pd_icl_ma, best_ma);
+	}
 }
 
 static void usbpd_pm_psy_change_work(struct work_struct *work)
@@ -1298,6 +1346,7 @@ static void usbpd_pm_psy_change_work(struct work_struct *work)
 	struct usbpd_pm *pdpm = container_of(work, struct usbpd_pm, usb_psy_change_work);
 	int ret = 0;
 	int pd_active = 0;
+	bool hold_5v = false;
 
 	ret = usbpd_pm_get_pd_active(pdpm, &pd_active);
 	if (ret) {
@@ -1311,13 +1360,22 @@ static void usbpd_pm_psy_change_work(struct work_struct *work)
 		if (!bq) {
 			pr_err("get fg drv data  failed\n");
                 } else {
-			if (bq->irregular_batt && pd_active == QTI_POWER_SUPPLY_PD_ACTIVE) {
+			/*
+			 * The stock usbpd stays on the 5V pdo while the
+			 * connector is protected or the battery is irregular.
+			 * Without this the plain pd shim below selected 9V
+			 * again right after it was dropped to 5V.
+			 */
+			hold_5v = bq->irregular_batt || bq->connector_protect;
+			if (hold_5v && pd_active == QTI_POWER_SUPPLY_PD_ACTIVE) {
 				psy_usb = power_supply_get_by_name("usb");
 				if (!IS_ERR_OR_NULL(psy_usb)) {
 					if (!power_supply_get_property(psy_usb, POWER_SUPPLY_PROP_VOLTAGE_NOW, &pval)) {
 						pr_info("get vbus voltage:%dmV\n", pval.intval / 1000);
 						if (pval.intval > HVDCP_MIN_VOL_UV) {
-							pr_info("force 5v pd, irregular_batt:%d\n", bq->irregular_batt);
+							pr_info("force 5v pd, irregular_batt:%d connector_protect:%d\n",
+								bq->irregular_batt, bq->connector_protect);
+							usbpd_pm_plain_pd_icl_release();
 							usbpd_select_pdo(pdpm->pd, 1, 0, 0);
 						}
 					} else
@@ -1330,10 +1388,12 @@ static void usbpd_pm_psy_change_work(struct work_struct *work)
 		pr_err("get fg psy failed\n");
         }
 
-	if (pd_active == QTI_POWER_SUPPLY_PD_ACTIVE)
+	if (pd_active == QTI_POWER_SUPPLY_PD_ACTIVE && !hold_5v)
 		usbpd_pm_select_plain_pd_pdo(pdpm);
-	else if (pd_active == QTI_POWER_SUPPLY_PD_INACTIVE)
+	else if (pd_active == QTI_POWER_SUPPLY_PD_INACTIVE) {
 		pdpm->plain_pd_pdo_done = false;
+		usbpd_pm_plain_pd_icl_release();
+	}
 
 	if (!pdpm->pd_active && (pd_active == QTI_POWER_SUPPLY_PD_PPS_ACTIVE)) {
 		usbpd_pm_pd_contact(pdpm, true);
